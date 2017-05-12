@@ -1,0 +1,577 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "This template coordinates the running of the Artifactory S3 and IAM templates.",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "Stack child-templates"
+          },
+          "Parameters": [
+            "BucketIamTemplate",
+            "ArtifactBucketTemplate",
+            "ArtifactoryHostTemplate"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Script URLs"
+          },
+          "Parameters": [
+            "ArtifactoryOsPrepScriptUrl",
+            "ArtifactoryDbPropsScriptUrl",
+            "ArtifactoryStorageScriptUrl"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Instance - Main Parameters"
+          },
+          "Parameters": [
+            "AmiId",
+            "InstanceType",
+            "ProvisionUser",
+            "KeyPairName",
+            "AdminPubkeyURL",
+            "Hostname",
+            "Domainname",
+            "SecurityGroupIds",
+            "SubnetIds",
+            "NoPublicIp",
+            "NoReboot"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Instance - Optional Storage"
+          },
+          "Parameters": [
+            "AppVolumeSize",
+            "AppVolumeType",
+            "AppVolumeDevice",
+            "AppVolumeMountPath"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Database Connection Info"
+          },
+          "Parameters": [
+            "ArtifactoryDbHost",
+            "ArtifactoryDbPort",
+            "ArtifactoryDbInst",
+            "ArtifactoryDbAdmin",
+            "ArtifactoryDbPassword"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Artifactory Parameters"
+          },
+          "Parameters": [
+            "JfrogRepositoryName",
+            "JfrogRepositoryUrl",
+            "ArtifactoryRpm",
+            "ArtifactoryHome",
+            "ArtifactBucket",
+            "ArtifactoryLicenseUrl"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Miscellaneous"
+          },
+          "Parameters": [
+            "PipIndexFips",
+            "EpelRepo",
+            "PipRpm",
+            "PyStache",
+            "CfnEndpointUrl"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "AdminPubkeyURL": {
+          "default": "Supplemental SSH Keys"
+        },
+        "AppVolumeMountPath": {
+          "default": "Artifactory Cache Location"
+        },
+        "AppVolumeSize": {
+          "default": "Artifactory Cache Size"
+        },
+        "ArtifactoryDbAdmin": {
+          "default": "Master database administrator"
+        },
+        "ArtifactoryDbHost": {
+          "default": "Remote database FQDN"
+        },
+        "ArtifactoryDbInst": {
+          "default": "Master database name"
+        },
+        "ArtifactoryDbPassword": {
+          "default": "Database administrator password"
+        },
+        "ArtifactoryDbPort": {
+          "default": "Remote database Port"
+        },
+        "ArtifactoryDbPropsScriptUrl": {
+          "default": "DB target-script URL"
+        },
+        "ArtifactoryHome": {
+          "default": "${ARTIFACTORY_HOME}"
+        },
+        "ArtifactoryLicenseUrl": {
+          "default": "License-key URL"
+        },
+        "ArtifactoryOsPrepScriptUrl": {
+          "default": "OS prep-script URL"
+        },
+        "ArtifactoryRpm": {
+          "default": "Installation RPM"
+        },
+        "ArtifactoryStorageScriptUrl": {
+          "default": "Storage script URL"
+        },
+        "CfnEndpointUrl": {
+          "default": "Cloudformation Endpoint"
+        },
+        "Domainname": {
+          "default": "Artifactory DNS domain"
+        },
+        "EpelRepo": {
+          "default": "EPEL repository label"
+        },
+        "JfrogRepositoryName": {
+          "default": "Yum repository label"
+        },
+        "JfrogRepositoryUrl": {
+          "default": "Yum repository URL"
+        },
+        "KeyPairName": {
+          "default": "Default SSH Key"
+        },
+        "NoPublicIp": {
+          "default": "Disable Public IP"
+        },
+        "PipIndexFips": {
+          "default": "Pip Index"
+        },
+        "ProvisionUser": {
+          "default": "Default OS login-account"
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "AdminPubkeyURL": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL the file containing the admin users' SSH public keys.",
+      "Type": "String"
+    },
+    "AmiId": {
+      "AllowedPattern": "^ami-[0-9a-z]{8}$|^ami-[0-9a-z]{17}$",
+      "Description": "ID of the AMI to launch",
+      "Type": "String"
+    },
+    "AppVolumeDevice": {
+      "AllowedValues": [
+        "",
+        "/dev/xvdf",
+        "/dev/xvdg",
+        "/dev/xvdh",
+        "/dev/xvdi",
+        "/dev/xvdj"
+      ],
+      "Default": "",
+      "Description": "Device to mount an extra EBS volume. Leave blank to launch without an extra application volume",
+      "Type": "String"
+    },
+    "AppVolumeMountPath": {
+      "AllowedPattern": "/.*",
+      "Default": "/var/cache/artifactory",
+      "Description": "Filesystem path to mount the extra app volume. Ignored if \"AppVolumeDevice\" is blank",
+      "Type": "String"
+    },
+    "AppVolumeSize": {
+      "ConstraintDescription": "Must be between 1GB and 16384GB.",
+      "Default": "10",
+      "Description": "Size in GB of the EBS volume to create. Ignored if \"AppVolumeDevice\" is blank",
+      "MaxValue": "16384",
+      "MinValue": "10",
+      "Type": "Number"
+    },
+    "AppVolumeType": {
+      "AllowedValues": [
+        "gp2",
+        "io1",
+        "sc1",
+        "st1",
+        "standard"
+      ],
+      "Default": "gp2",
+      "Description": "Type of EBS volume to create. Ignored if \"AppVolumeDevice\" is blank",
+      "Type": "String"
+    },
+    "ArtifactBucket": {
+      "AllowedPattern": "^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]*$",
+      "Description": "S3 Bucket to host Artifactory Artifacts",
+      "Type": "String"
+    },
+    "ArtifactBucketTemplate": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to the child-template for creating the artifact-bucket.",
+      "Type": "String"
+    },
+    "ArtifactoryDbAdmin": {
+      "AllowedPattern": "[a-z0-9]{6,16}+",
+      "ConstraintDescription": "Alphanumeric string between 6 and 12 characters.",
+      "Description": "Remote PostGreSQL database's master user account.",
+      "Type": "String"
+    },
+    "ArtifactoryDbHost": {
+      "ConstraintDescription": "The RFC 1035 compliant FQDN of the remote PostGreSQL database host.",
+      "Description": "The FQDN of the remote PostGreSQL database host.",
+      "Type": "String"
+    },
+    "ArtifactoryDbInst": {
+      "ConstraintDescription": "Alphanumeric string representing the name of the PostGreSQL schema-table.",
+      "Description": "The name of the PostGreSQL schema-table.",
+      "Type": "String"
+    },
+    "ArtifactoryDbPassword": {
+      "ConstraintDescription": "A suitably-complex, alphanumeric string between 6 and 20 characters.",
+      "Description": "Remote PostGreSQL database's master user's login password.",
+      "Type": "String"
+    },
+    "ArtifactoryDbPort": {
+      "ConstraintDescription": "Must be between 1024 and 61000.",
+      "Default": "5432",
+      "Description": "The port-number the remote PostGreSQL server is listening on.",
+      "MaxValue": "61000",
+      "MinValue": "1025",
+      "Type": "Number"
+    },
+    "ArtifactoryDbPropsScriptUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to script that performs DB-client configuration actions for Artifactory",
+      "Type": "String"
+    },
+    "ArtifactoryHome": {
+      "ConstraintDescription": "An LSB-compliant, slash-delimited directory-path.",
+      "Default": "/var/opt/jfrog/artifactory",
+      "Description": "The root installation location for the Artifactory application.",
+      "Type": "String"
+    },
+    "ArtifactoryHostTemplate": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to the child-template for creating the Artifactory-host EC2 instance.",
+      "Type": "String"
+    },
+    "ArtifactoryLicenseUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to Artifactory license file",
+      "Type": "String"
+    },
+    "ArtifactoryOsPrepScriptUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to script that prepares the EC2 instance's host OS for installation of Artifactory",
+      "Type": "String"
+    },
+    "ArtifactoryRpm": {
+      "Default": "jfrog-artifactory-pro",
+      "Description": "Name of the Artifactory installation-RPM.",
+      "Type": "String"
+    },
+    "ArtifactoryStorageScriptUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to script that performs tiered-storage configuration actions for Artifactory",
+      "Type": "String"
+    },
+    "BucketIamTemplate": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to the child-template for creating the Artifactory bucket(s) IAM roles.",
+      "Type": "String"
+    },
+    "CfnEndpointUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Default": "",
+      "Description": "URL to the CloudFormation Endpoint. e.g. https://cloudformation.us-east-1.amazonaws.com",
+      "Type": "String"
+    },
+    "Domainname": {
+      "ConstraintDescription": "An alphanumeric string to complete the domain portion of the instance's FQDN.",
+      "Description": "Suffix for Artifactory's hostname and DNS record",
+      "Type": "String"
+    },
+    "EpelRepo": {
+      "AllowedPattern": "^[a-z][a-z0-9-]*$",
+      "ConstraintDescription": "An alphanumeric string that represents the EPEL yum repo's label.",
+      "Default": "epel",
+      "Description": "Name of network's EPEL repo.",
+      "Type": "String"
+    },
+    "Hostname": {
+      "ConstraintDescription": "An alphanumeric string to complete the hostname portion of the instance's FQDN.",
+      "Default": "artifactory",
+      "Description": "Node-name for Artifactory's hostname and DNS record",
+      "Type": "String"
+    },
+    "InstanceType": {
+      "AllowedValues": [
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "t2.xlarge",
+        "t2.2xlarge",
+        "m3.medium",
+        "m3.large",
+        "m3.xlarge",
+        "m3.2xlarge",
+        "m4.large",
+        "m4.xlarge",
+        "m4.2xlarge",
+        "m4.4xlarge",
+        "m4.10xlarge",
+        "m4.16xlarge",
+        "c3.large",
+        "c3.xlarge",
+        "c3.2xlarge",
+        "c3.4xlarge",
+        "c3.8xlarge",
+        "c4.large",
+        "c4.xlarge",
+        "c4.2xlarge",
+        "c4.4xlarge",
+        "c4.8xlarge"
+      ],
+      "Default": "t2.large",
+      "Description": "Amazon EC2 instance type",
+      "Type": "String"
+    },
+    "JfrogRepositoryName": {
+      "Default": "bintray--jfrog-artifactory-pro-rpms",
+      "Description": "Name of the yum repository hosting Artifactory RPMs.",
+      "Type": "String"
+    },
+    "JfrogRepositoryUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Default": "http://jfrog.bintray.com/artifactory-pro-rpms",
+      "Description": "Base-URL of the yum repository hosting Artifactory RPMs.",
+      "Type": "String"
+    },
+    "KeyPairName": {
+      "Description": "Public/private key pairs allowing the provisioning-user to securely connect to the instance after it launches.",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "NoPublicIp": {
+      "AllowedValues": [
+        "false",
+        "true"
+      ],
+      "Default": "true",
+      "Description": "Controls whether to assign the instance a public IP. Recommended to leave at \"true\" _unless_ launching in a public subnet",
+      "Type": "String"
+    },
+    "NoReboot": {
+      "AllowedValues": [
+        "false",
+        "true"
+      ],
+      "Default": "false",
+      "Description": "Controls whether to reboot the instance as the last step of cfn-init execution",
+      "Type": "String"
+    },
+    "PipIndexFips": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Default": "https://pypi.org/simple/",
+      "Description": "URL of pip index  that is compatible with FIPS 140-2 requirements.",
+      "Type": "String"
+    },
+    "PipRpm": {
+      "Default": "python2-pip",
+      "Description": "Name of preferred pip RPM.",
+      "Type": "String"
+    },
+    "ProvisionUser": {
+      "AllowedPattern": "[a-z0-9]{6,12}+",
+      "ConstraintDescription": "Alphanumeric string between 6 and 12 characters.",
+      "Default": "artibuild",
+      "Description": "Default login user account name.",
+      "Type": "String"
+    },
+    "PyStache": {
+      "Default": "pystache",
+      "Description": "Name of preferred pystache RPM.",
+      "Type": "String"
+    },
+    "SecurityGroupIds": {
+      "Description": "List of security groups to apply to the instance(s)",
+      "Type": "List<AWS::EC2::SecurityGroup::Id>"
+    },
+    "SubnetIds": {
+      "Description": "Subnet to associate to the Instance",
+      "Type": "AWS::EC2::Subnet::Id"
+    }
+  },
+  "Resources": {
+    "Ec2ArtifactoryHostRes": {
+      "Properties": {
+        "Parameters": {
+          "AdminPubkeyURL": {
+            "Ref": "AdminPubkeyURL"
+          },
+          "AmiId": {
+            "Ref": "AmiId"
+          },
+          "AppVolumeDevice": {
+            "Ref": "AppVolumeDevice"
+          },
+          "AppVolumeMountPath": {
+            "Ref": "AppVolumeMountPath"
+          },
+          "AppVolumeSize": {
+            "Ref": "AppVolumeSize"
+          },
+          "AppVolumeType": {
+            "Ref": "AppVolumeType"
+          },
+          "ArtifactoryArtifactBucket": {
+            "Ref": "ArtifactBucket"
+          },
+          "ArtifactoryDbAdmin": {
+            "Ref": "ArtifactoryDbAdmin"
+          },
+          "ArtifactoryDbHost": {
+            "Ref": "ArtifactoryDbHost"
+          },
+          "ArtifactoryDbInst": {
+            "Ref": "ArtifactoryDbInst"
+          },
+          "ArtifactoryDbPassword": {
+            "Ref": "ArtifactoryDbPassword"
+          },
+          "ArtifactoryDbPort": {
+            "Ref": "ArtifactoryDbPort"
+          },
+          "ArtifactoryDbPropsScriptUrl": {
+            "Ref": "ArtifactoryDbPropsScriptUrl"
+          },
+          "ArtifactoryHome": {
+            "Ref": "ArtifactoryHome"
+          },
+          "ArtifactoryLicenseUrl": {
+            "Ref": "ArtifactoryLicenseUrl"
+          },
+          "ArtifactoryOsPrepScriptUrl": {
+            "Ref": "ArtifactoryOsPrepScriptUrl"
+          },
+          "ArtifactoryRpm": {
+            "Ref": "ArtifactoryRpm"
+          },
+          "ArtifactoryStorageScriptUrl": {
+            "Ref": "ArtifactoryStorageScriptUrl"
+          },
+          "CfnEndpointUrl": {
+            "Ref": "CfnEndpointUrl"
+          },
+          "Domainname": {
+            "Ref": "Domainname"
+          },
+          "EpelRepo": {
+            "Ref": "EpelRepo"
+          },
+          "Hostname": {
+            "Ref": "Hostname"
+          },
+          "InstanceProfile": {
+            "Fn::GetAtt": [
+              "IamArtifactBucketRes",
+              "Outputs.InstanceRoleProfile"
+            ]
+          },
+          "InstanceRole": {
+            "Fn::GetAtt": [
+              "IamArtifactBucketRes",
+              "Outputs.InstanceRole"
+            ]
+          },
+          "InstanceType": {
+            "Ref": "InstanceType"
+          },
+          "JfrogRepositoryName": {
+            "Ref": "JfrogRepositoryName"
+          },
+          "JfrogRepositoryUrl": {
+            "Ref": "JfrogRepositoryUrl"
+          },
+          "KeyPairName": {
+            "Ref": "KeyPairName"
+          },
+          "NoPublicIp": {
+            "Ref": "NoPublicIp"
+          },
+          "NoReboot": {
+            "Ref": "NoReboot"
+          },
+          "PipIndexFips": {
+            "Ref": "PipIndexFips"
+          },
+          "PipRpm": {
+            "Ref": "PipRpm"
+          },
+          "ProvisionUser": {
+            "Ref": "ProvisionUser"
+          },
+          "PyStache": {
+            "Ref": "PyStache"
+          },
+          "SecurityGroupIds": {
+            "Fn::Join": [
+              ",",
+              { "Ref": "SecurityGroupIds" }
+            ]
+          },
+          "SubnetIds": {
+            "Ref": "SubnetIds"
+          }
+        },
+        "TemplateURL": {
+          "Ref": "ArtifactoryHostTemplate"
+        },
+        "TimeoutInMinutes": "10"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "IamArtifactBucketRes": {
+      "Properties": {
+        "Parameters": {
+          "ArtifactBucket": {
+            "Ref": "ArtifactBucket"
+          }
+        },
+        "TemplateURL": {
+          "Ref": "BucketIamTemplate"
+        },
+        "TimeoutInMinutes": "10"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "S3ArtifactBucketRes": {
+      "Properties": {
+        "Parameters": {
+          "ArtifactBucket": {
+            "Ref": "ArtifactBucket"
+          }
+        },
+        "TemplateURL": {
+          "Ref": "ArtifactBucketTemplate"
+        },
+        "TimeoutInMinutes": "10"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    }
+  }
+}

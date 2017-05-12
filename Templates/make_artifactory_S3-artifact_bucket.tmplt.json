@@ -1,0 +1,26 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "This template sets up the S3 Bucket used by an Artifactory instance for artifact storage.",
+  "Parameters": {
+    "ArtifactBucket": {
+      "Description": "S3 Bucket to host Artifactory Artifacts",
+      "Type": "String",
+      "AllowedPattern": "^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]*$"
+    }
+  },
+  "Resources": {
+    "S3ArtifactBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "AccessControl": "BucketOwnerFullControl",
+        "BucketName": { "Ref" : "ArtifactBucket" }
+      }
+    }
+  },
+  "Outputs": {
+    "BucketNameArtifacts": {
+      "Value": { "Ref": "S3ArtifactBucket" },
+      "Description": "Artifactory artifact S3 Bucket Name"
+    }
+  }
+}

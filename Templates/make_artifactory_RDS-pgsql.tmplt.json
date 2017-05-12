@@ -1,0 +1,124 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "This template sets up the S3 Bucket used by an Artifactory instance for artifact storage.",
+  "Parameters": {
+    "DbHostName": {
+      "Description": "Service hostname for the RDS Instance",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern": "^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]*$"
+    },
+    "DbCatlogTable": {
+      "Description": "Name of the PostGreSQL catalog/schema table.",
+      "Type": "String",
+      "MinLength": "1",
+      "MaxLength": "64",
+      "AllowedPattern": "^[a-zA-Z][a-zA-Z0-9_]*[a-zA-Z0-9]*$"
+    },
+    "DBInstanceClass": {
+      "Description": "Instance-type(s) hosting the database service.",
+      "Type": "String",
+      "Default": "db.t2.micro",
+      "AllowedValues": [
+        "db.t2.micro",
+        "db.t2.small",
+        "db.t2.medium",
+        "db.t2.large",
+        "db.m3.medium",
+        "db.m3.large",
+        "db.m3.xlarge",
+        "db.m3.2xlarge",
+        "db.m4.large",
+        "db.m4.xlarge",
+        "db.m4.2xlarge",
+        "db.m4.4xlarge",
+        "db.m4.10xlarge",
+        "db.r3.large",
+        "db.r3.xlarge",
+        "db.r3.2xlarge",
+        "db.r3.4xlarge",
+        "db.r3.8xlarge"
+      ]
+    },
+    "DbStorageSize": {
+      "Description": "Size (in GiB) of the PGSQL database.",
+      "Type": "Number",
+      "Default": "10",
+      "MinValue": "5",
+      "MaxValue": "16384",
+      "ConstraintDescription": "Must be between 1GB and 16384GB."
+    },
+    "PgsqlAdminName": {
+      "Description": "The PGSQL root/admin user.",
+      "Type": "String",
+      "MinLength": "8",
+      "MaxLength": "32",
+      "AllowedPattern": "^[a-z][a-z0-9_]*[a-z0-9]*$"
+    },
+    "PgsqlAdminPassword": {
+      "Description": "The PGSQL root/admin user's password.",
+      "Type": "String",
+      "MinLength": "8",
+      "MaxLength": "32",
+    },
+    "PgsqlVersion": {
+      "Description": "The X.Y.Z version of PostGreSQL to use.",
+      "Type": "String",
+      "Default": "9.6.1"
+    },
+    "PgsqlHa": {
+      "Description": "The EC2 VPC that will host the RDS node(s).",
+      "Type" : "String",
+      "Default": "false",
+      "AllowedValues": [
+        "false",
+        "true"
+      ]
+    },
+    "VpcId" : {
+      "Type" : "AWS::EC2::VPC::Id",
+      "Description" : "ID of an existing Virtual Private Cloud (VPC)."
+    }
+  },
+  "Resources": {
+    "PgsqlDb": {
+      "Type": "AWS::RDS::DBInstance",
+      "Properties": {
+        "PubliclyAccessible": false,
+        "Engine": "postgres",
+        "EngineVersion": {
+           "Ref": "PgsqlVersion"
+        },
+        "MultiAZ": { "Ref": "PgsqlHa"},
+        "AutoMinorVersionUpgrade": true,
+        "PreferredBackupWindow": "05:00-05:30",
+        "BackupRetentionPeriod": 7,
+        "DBName": {
+          "Ref": "DbCatlogTable"
+        },
+        "DBInstanceIdentifier": {
+          "Ref": "DbHostName"
+        },
+        "MasterUsername": {
+          "Ref": "PgsqlAdminName"
+        },
+        "MasterUserPassword": {
+          "Ref": "PgsqlAdminPassword"
+        },
+        "AllocatedStorage": {
+          "Ref": "DbStorageSize"
+        },
+        "DBInstanceClass": {
+          "Ref": "DBInstanceClass"
+        },
+        "Tags" : [
+          {
+            "Key" : "Name",
+            "Value" : "Artifactory PGSQL Database"
+          }
+        ]
+      }
+    }
+  }
+}
