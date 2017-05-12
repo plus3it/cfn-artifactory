@@ -32,7 +32,7 @@ function err_exit {
    # Need our exit to be an integer
    if [[ ${SCRIPTEXIT} =~ ^[0-9]+$ ]]
    then
-      exit ${SCRIPTEXIT}
+      exit "${SCRIPTEXIT}"
    else
       exit 1
    fi
@@ -57,7 +57,7 @@ function FwStuff {
    for PORT in "${FWPORTS[@]}"
    do
       printf "Add firewall exception for port %s... " "${PORT}"
-      ${FWCMD} --permanent --add-port=${PORT}/tcp || \
+      ${FWCMD} --permanent --add-port="${PORT}"/tcp || \
          err_exit "Failed to add port ${PORT} to firewalld"
    done
 

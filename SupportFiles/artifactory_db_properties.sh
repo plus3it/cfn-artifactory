@@ -112,7 +112,7 @@ fi
 ## Update or create ${ARTIFACTORY_ETC}/db.properties file as necessary
 if [[ -f ${DBPROPERTIES} ]]
 then
-   mv ${DBPROPERTIES} ${DBPROPERTIES}.BAK-${DATE} || \
+   mv "${DBPROPERTIES}" "${DBPROPERTIES}.BAK-${DATE}" || \
      err_exit "Failed to preserve existing '${DBPROPERTIES}' file"
    SELSRC="${DBPROPERTIES}.BAK-${DATE}"
 else
