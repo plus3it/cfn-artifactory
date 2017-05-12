@@ -1,11 +1,12 @@
 #!/bin/bash
+# shellcheck disable=SC2046
 #
 # This script is designed to update or create the
 # ${ARTIFACTORY_HOME}/etc/db.properties file to enable Artifactory
 # to leverage an external PGSQL database service.
 #
 #################################################################
-PROGNAME="$(basename ${0})"
+PROGNAME=$(basename "${0}")
 DATE=$(date "+%Y%m%d%H%M")
 PGSQLJDBC=postgresql-jdbc
 ARTIFACTORY_HOME=${ARTIFACTORY_HOME:-/var/opt/jfrog/artifactory}
@@ -39,7 +40,7 @@ function err_exit {
    # Need our exit to be an integer
    if [[ ${SCRIPTEXIT} =~ ^[0-9]+$ ]]
    then
-      exit ${SCRIPTEXIT}
+      exit "${SCRIPTEXIT}"
    else
       exit 1
    fi
