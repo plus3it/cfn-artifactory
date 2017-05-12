@@ -1,10 +1,11 @@
 #!/bin/bash
+# shellcheck disable=SC2046,SC2086
 #
 # This script updated the ${ARTIFACTORY_HOME}/etc/binarystore.xml
 #
 # storage-configuration file to enable S3-based artifact storage.
 #################################################################
-PROGNAME="$(basename ${0})"
+PROGNAME=$(basename "${0}")
 DATE=$(date "+%Y%m%d%H%M")
 ARTIFACTORY_HOME="${ARTIFACTORY_HOME:-/var/opt/jfrog/artifactory}"
 ARTIFACTORY_BUCKET="${ARTIFACTORY_BUCKET:-UNDEF}"
@@ -28,7 +29,7 @@ function err_exit {
    # Need our exit to be an integer
    if [[ ${SCRIPTEXIT} =~ ^[0-9]+$ ]]
    then
-      exit ${SCRIPTEXIT}
+      exit "${SCRIPTEXIT}"
    else
       exit 1
    fi
@@ -54,7 +55,7 @@ fi
 
 ##
 ## Bail if the offered binarystore.xml directory doesn't exist
-if [[ ! -d $(dirname ${BINSTORXML}) ]]
+if [[ ! -d $(dirname "${BINSTORXML}") ]]
 then
    err_exit "Aborting: no such directory '$(dirname ${BINSTORXML})'."
 fi
