@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=2086
 #
 # Set up Artifactory node as a cluster-member (also suitable fo
 # single-node "cluster" configurations
@@ -26,11 +27,11 @@ then
 fi
 
 # Download bootstrap bundle
-curl -skL ${HABUNDLE} -o ${ARTIFACTORY_ETC}/bootstrap.bundle.tar.gz || \
+curl -skL "${HABUNDLE}" -o "${ARTIFACTORY_ETC}/bootstrap.bundle.tar.gz" || \
   err_exit "was not able to download/save ${HABUNDLE}"
 
 # Ensure the download didn't pull a bum file
-if [[ $(file ${ARTIFACTORY_ETC}/bootstrap.bundle.tar.gz | grep -q gzip)$? -eq 0 ]]
+if [[ $(file "${ARTIFACTORY_ETC}/bootstrap.bundle.tar.gz" | grep -q gzip)$? -eq 0 ]]
 then
    echo "Successfully installed ${ARTIFACTORY_ETC}/bootstrap.bundle.tar.gz"
 else
@@ -42,12 +43,13 @@ if [[ ${ISPRIMARY} = true ]]
 then
    NODENAME="master"
 else
+   # shellcheck disable=SC2001,SC2046
    NODENAME="$(printf '%02X' $(echo ${NODEIPADDR}| sed 's/\./ /g'))"
 fi
 
 # Create ha-node.properties file
 printf "Creating %s... " "${HACONF}"
-cat > ${HACONF} << EOF
+cat > "${HACONF}" << EOF
 node.id=${NODENAME}
 context.url=http://${HOSTNAME}:8081/artifactory
 membership.port=10001
@@ -63,7 +65,7 @@ else
 fi
 
 # Fix file perms/contexts
-CHOWNER=$(stat -c "%U:%G" ${ARTIFACTORY_ETC})
+CHOWNER=$(stat -c "%U:%G" "${ARTIFACTORY_ETC}")
 for FIXIT in ${HACONF} ${ARTIFACTORY_ETC}/bootstrap.bundle.tar.gz
 do
    chown "${CHOWNER}" "${FIXIT}"
