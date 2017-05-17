@@ -22,6 +22,7 @@ ARTIFACTORY_DBPORT="${ARTIFACTORY_DBPORT:-5432}"
 ARTIFACTORY_RPM=jfrog-artifactory-pro
 ARTIFACTORY_LICKEY=${ARTIFACTORY_ETC}/artifactory.lic
 DBPROPERTIES="${ARTIFACTORY_ETC}/db.properties"
+SELSRC=${ARTIFACTORY_ETC}/mimetypes.xml
 
 ## Try not to let any prior stytem-hardening cause
 ## created files to have bad ownership-settings
@@ -108,39 +109,42 @@ else
          err_exit "Failed to link PostGreSQL JDBC into Artifactory."
 fi
 
-##
-## Update or create ${ARTIFACTORY_ETC}/db.properties file as necessary
-if [[ -f ${DBPROPERTIES} ]]
-then
-   mv "${DBPROPERTIES}" "${DBPROPERTIES}.BAK-${DATE}" || \
-     err_exit "Failed to preserve existing '${DBPROPERTIES}' file"
-   SELSRC="${DBPROPERTIES}.BAK-${DATE}"
-else
-   SELSRC="${ARTIFACTORY_ETC}/artifactory.config.xml"
-fi
+############################################################
+## Section not necessary if using an cluster bundle-file
+############################################################
+## ##
+## ## Update or create ${ARTIFACTORY_ETC}/db.properties file as necessary
+## if [[ -f ${DBPROPERTIES} ]]
+## then
+##    mv "${DBPROPERTIES}" "${DBPROPERTIES}.BAK-${DATE}" || \
+##      err_exit "Failed to preserve existing '${DBPROPERTIES}' file"
+##    SELSRC="${DBPROPERTIES}.BAK-${DATE}"
+## else
+##    SELSRC="${ARTIFACTORY_ETC}/artifactory.config.xml"
+## fi
+## 
+## # Grab header-content from RPM's example file
+## grep ^# "${SRCPGSQLCONF}" > "${DBPROPERTIES}" || \
+##    err_exit "Failed to create stub '${DBPROPERTIES}' content"
+## 
+## ##
+## ## Append db-connection info to db.properties file
+## echo "Crerating new '${DBPROPERTIES}' file..."
+## cat << EOF >> "${DBPROPERTIES}"
+## 
+## type=postgresql
+## driver=org.postgresql.Driver
+## url=jdbc:postgresql://${ARTIFACTORY_DBHOST}:${ARTIFACTORY_DBPORT}/${ARTIFACTORY_DBINST}
+## username=${ARTIFACTORY_DBUSER}
+## password=${ARTIFACTORY_DBPASS}
+## EOF
+## 
+## if [[ $? -ne 0 ]]
+## then
+##    err_exit "Error creating new '${DBPROPERTIES}' file. Aborting."
+## fi
 
-# Grab header-content from RPM's example file
-grep ^# "${SRCPGSQLCONF}" > "${DBPROPERTIES}" || \
-   err_exit "Failed to create stub '${DBPROPERTIES}' content"
-
-##
-## Append db-connection info to db.properties file
-echo "Crerating new '${DBPROPERTIES}' file..."
-cat << EOF >> "${DBPROPERTIES}"
-
-type=postgresql
-driver=org.postgresql.Driver
-url=jdbc:postgresql://${ARTIFACTORY_DBHOST}:${ARTIFACTORY_DBPORT}/${ARTIFACTORY_DBINST}
-username=${ARTIFACTORY_DBUSER}
-password=${ARTIFACTORY_DBPASS}
-EOF
-
-if [[ $? -ne 0 ]]
-then
-   err_exit "Error creating new '${DBPROPERTIES}' file. Aborting."
-fi
 
 ##
 ## Ensure file is usable by Artifactory
-FixAttrs "${DBPROPERTIES}"
 FixAttrs "${ARTIFACTORY_LICKEY}"
