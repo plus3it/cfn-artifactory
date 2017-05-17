@@ -7,7 +7,6 @@
 PROGNAME="$(basename $0)"
 HOSTNAME="$(curl -skL http://169.254.169.254/latest/meta-data/local-hostname/)"
 NODEIPADDR="$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4/)"
-NODENAME="$(printf '%02X' $(echo ${NODEIPADDR}| sed 's/\./ /g'))"
 ARTIFACTORY_HOME="${ARTIFACTORY_HOME:-/var/opt/jfrog/artifactory}"
 ARTIFACTORY_ETC="${ARTIFACTORY_HOME}/etc"
 ISPRIMARY=${ARTIFACTORY_CL_PRIM:-true}
@@ -36,6 +35,14 @@ then
    echo "Successfully installed ${ARTIFACTORY_ETC}/bootstrap.bundle.tar.gz"
 else
   err_exit "Installed ${ARTIFACTORY_ETC}/bootstrap.bundle.tar.gz is not valid"
+fi
+
+# Autoselect node-name
+if [[ ${ISPRIMARY} = true ]]
+then
+   NODENAME="master"
+else
+   NODENAME="$(printf '%02X' $(echo ${NODEIPADDR}| sed 's/\./ /g'))"
 fi
 
 # Create ha-node.properties file
