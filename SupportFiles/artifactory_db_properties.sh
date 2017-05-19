@@ -7,7 +7,6 @@
 #
 #################################################################
 PROGNAME=$(basename "${0}")
-DATE=$(date "+%Y%m%d%H%M")
 PGSQLJDBC=postgresql-jdbc
 ARTIFACTORY_HOME=${ARTIFACTORY_HOME:-/var/opt/jfrog/artifactory}
 ARTIFACTORY_ETC=${ARTIFACTORY_ETC:-${ARTIFACTORY_HOME}/etc}
@@ -21,7 +20,7 @@ ARTIFACTORY_DBHOST="${ARTIFACTORY_DBHOST:-UNDEF}"
 ARTIFACTORY_DBPORT="${ARTIFACTORY_DBPORT:-5432}"
 ARTIFACTORY_RPM=jfrog-artifactory-pro
 ARTIFACTORY_LICKEY=${ARTIFACTORY_ETC}/artifactory.lic
-DBPROPERTIES="${ARTIFACTORY_ETC}/db.properties"
+SELSRC=${ARTIFACTORY_ETC}/mimetypes.xml
 
 ## Try not to let any prior stytem-hardening cause
 ## created files to have bad ownership-settings
@@ -71,7 +70,6 @@ function FixAttrs {
 if [[ $(rpm -q --quiet ${ARTIFACTORY_RPM})$? -eq 0 ]]
 then
    echo "Found ${ARTIFACTORY_RPM} installed (via RPM)"
-   SRCPGSQLCONF=$(rpm -ql ${ARTIFACTORY_RPM} | grep postgresql.properties)
 else
    err_exit "Did not find an installation of ${ARTIFACTORY_RPM}. Aborting."
 fi
@@ -109,38 +107,5 @@ else
 fi
 
 ##
-## Update or create ${ARTIFACTORY_ETC}/db.properties file as necessary
-if [[ -f ${DBPROPERTIES} ]]
-then
-   mv "${DBPROPERTIES}" "${DBPROPERTIES}.BAK-${DATE}" || \
-     err_exit "Failed to preserve existing '${DBPROPERTIES}' file"
-   SELSRC="${DBPROPERTIES}.BAK-${DATE}"
-else
-   SELSRC="${ARTIFACTORY_ETC}/artifactory.config.xml"
-fi
-
-# Grab header-content from RPM's example file
-grep ^# "${SRCPGSQLCONF}" > "${DBPROPERTIES}" || \
-   err_exit "Failed to create stub '${DBPROPERTIES}' content"
-
-##
-## Append db-connection info to db.properties file
-echo "Crerating new '${DBPROPERTIES}' file..."
-cat << EOF >> "${DBPROPERTIES}"
-
-type=postgresql
-driver=org.postgresql.Driver
-url=jdbc:postgresql://${ARTIFACTORY_DBHOST}:${ARTIFACTORY_DBPORT}/${ARTIFACTORY_DBINST}
-username=${ARTIFACTORY_DBUSER}
-password=${ARTIFACTORY_DBPASS}
-EOF
-
-if [[ $? -ne 0 ]]
-then
-   err_exit "Error creating new '${DBPROPERTIES}' file. Aborting."
-fi
-
-##
 ## Ensure file is usable by Artifactory
-FixAttrs "${DBPROPERTIES}"
 FixAttrs "${ARTIFACTORY_LICKEY}"

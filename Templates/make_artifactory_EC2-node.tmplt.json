@@ -74,7 +74,8 @@
           "Parameters": [
             "ArtifactoryOsPrepScriptUrl",
             "ArtifactoryDbPropsScriptUrl",
-            "ArtifactoryStorageScriptUrl"
+            "ArtifactoryStorageScriptUrl",
+            "ArtifactoryHaSetupScriptUrl"
           ]
         },
         {
@@ -130,7 +131,9 @@
               "ArtifactoryRpm",
               "ArtifactoryHome",
               "ArtifactoryArtifactBucket",
-              "ArtifactoryLicenseUrl"
+              "ArtifactoryLicenseUrl",
+              "ArtifactoryHaBundleUrl",
+              "ArtifactoryIsHaPrimary"
           ]
         },
         {
@@ -180,11 +183,20 @@
          "ArtifactoryOsPrepScriptUrl": {
            "default" : "OS prep-script URL"
          },
+         "ArtifactoryHaSetupScriptUrl": {
+           "default" : "HA node setup-script URL"
+         },
          "ArtifactoryDbPropsScriptUrl": {
            "default" : "DB target-script URL"
          },
          "ArtifactoryHome": {
            "default" : "${ARTIFACTORY_HOME}"
+         },
+         "ArtifactoryHaBundleUrl": {
+           "default" : "Node config bundle URL"
+         },
+         "ArtifactoryIsHaPrimary": {
+           "default" : "Is cluster primary"
          },
          "ArtifactoryRpm": {
            "default" : "Installation RPM"
@@ -316,10 +328,29 @@
       "Description": "Suffix for Artifactory's hostname and DNS record",
       "Type": "String"
     },
+    "ArtifactoryHaBundleUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "Url of Artifactory HA node bundle file.",
+      "Type": "String"
+    },
+    "ArtifactoryHaSetupScriptUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to script that performs HA cluster configuration.",
+      "Type": "String"
+    },
     "ArtifactoryHome": {
       "ConstraintDescription": "An LSB-compliant, slash-delimited directory-path.",
       "Default": "/var/opt/jfrog/artifactory",
       "Description": "The root installation location for the Artifactory application.",
+      "Type": "String"
+    },
+    "ArtifactoryIsHaPrimary": {
+      "Description": "Whether instance is primary node in an HA cluster.",
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "true",
       "Type": "String"
     },
     "Hostname": {
@@ -782,6 +813,12 @@
                 "      export ARTIFACTORY_LOGS=${ARTIFACTORY_HOME}/logs\n",
                 "      export ARTIFACTORY_VARS=${ARTIFACTORY_HOME}/etc/default\n",
                 "      export ARTIFACTORY_TOMCAT_HOME=${ARTIFACTORY_HOME}/tomcat\n",
+                "      export ARTIFACTORY_CL_PRIM=",
+                         { "Ref": "ArtifactoryIsHaPrimary" },
+                         "\n",
+                "      export ARTIFACTORY_HABUNDLE=",
+                         { "Ref": "ArtifactoryHaBundleUrl" },
+                         "\n",
                 "      export ARTIFACTORY_DBINST=",
                 {
                   "Ref": "ArtifactoryDbInst"
@@ -955,6 +992,14 @@
                 },
                 " | tee /root/s3setup.sh | bash || err_exit \"Storage-",
                 "tiering script failed to run to proper completion-state.\"\n",
+                "      \n",
+                "      # Configure HA membership info\n",
+                "      curl -skl ",
+                {
+                  "Ref": "ArtifactoryHaSetupScriptUrl"
+                },
+                " | tee /root/ha-setup.sh | bash || err_exit \"HA",
+                "node configuration script failed to run to proper completion-state.\"\n",
                 "      \n",
                 "      # Start Artifactory\n",
                 "      setenforce 0\n",
