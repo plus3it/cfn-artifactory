@@ -14,6 +14,14 @@ ISPRIMARY=${ARTIFACTORY_CL_PRIM:-true}
 HABUNDLE=${ARTIFACTORY_HABUNDLE:-UNDEF}
 HACONF="${ARTIFACTORY_ETC}/ha-node.properties"
 
+
+# Skip if not to be a part of a "cluster"
+if [[ ${ARTIFACTORY_CL_MMBR} = false ]]
+then
+   echo "Node not designated as cluster member. Exiting."
+   exit 0
+fi
+
 # Error-handler function
 function err_exit {
    logger -s -p kern.crit -t "${PROGNAME}" "Failed: ${1}"

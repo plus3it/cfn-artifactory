@@ -66,6 +66,42 @@ function FixAttrs {
 
 
 ##
+## DB-setup for non-clustered nodes
+function CreateDbProperties {
+   if [[ -f ${DBPROPERTIES} ]]
+   then
+      mv "${DBPROPERTIES}" "${DBPROPERTIES}.BAK-${DATE}" || \
+        err_exit "Failed to preserve existing '${DBPROPERTIES}' file"
+   fi
+
+   # Grab header-content from RPM's example file
+   grep ^# "${SRCPGSQLCONF}" > "${DBPROPERTIES}" || \
+      err_exit "Failed to create stub '${DBPROPERTIES}' content"
+
+   ##
+   ## Append db-connection info to db.properties file
+   echo "Crerating new '${DBPROPERTIES}' file..."
+cat << EOF >> "${DBPROPERTIES}"
+
+type=postgresql
+driver=org.postgresql.Driver
+url=jdbc:postgresql://${ARTIFACTORY_DBHOST}:${ARTIFACTORY_DBPORT}/${ARTIFACTORY_DBINST}
+username=${ARTIFACTORY_DBUSER}
+password=${ARTIFACTORY_DBPASS}
+EOF
+
+   # Make sure the properites file actually got created/updated
+   if [[ $? -ne 0 ]]
+   then
+      err_exit "Error creating new '${DBPROPERTIES}' file. Aborting."
+   fi
+
+   # Fix the file attributes
+   FixAttrs "${DBPROPERTIES}"
+}
+
+
+##
 ## Verify that the Artifactory RPM has been installed
 if [[ $(rpm -q --quiet ${ARTIFACTORY_RPM})$? -eq 0 ]]
 then
@@ -108,4 +144,9 @@ fi
 
 ##
 ## Ensure file is usable by Artifactory
+if [[ ${ARTIFACTORY_CL_MMBR} = false ]]
+then
+   CreateDbProperties
+fi
+
 FixAttrs "${ARTIFACTORY_LICKEY}"
