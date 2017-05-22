@@ -156,6 +156,7 @@
               "ArtifactoryArtifactBucket",
               "ArtifactoryLicenseUrl",
               "ArtifactoryHaBundleUrl",
+              "ArtifactoryIsHaMember",
               "ArtifactoryIsHaPrimary"
           ]
         },
@@ -217,6 +218,9 @@
          },
          "ArtifactoryHaBundleUrl": {
            "default" : "Node config bundle URL"
+         },
+         "ArtifactoryIsHaMember": {
+           "default" : "Is cluster member"
          },
          "ArtifactoryIsHaPrimary": {
            "default" : "Is cluster primary"
@@ -404,6 +408,15 @@
       "ConstraintDescription": "An LSB-compliant, slash-delimited directory-path.",
       "Default": "/var/opt/jfrog/artifactory",
       "Description": "The root installation location for the Artifactory application.",
+      "Type": "String"
+    },
+    "ArtifactoryIsHaMember": {
+      "Description": "Whether instance is a member of an HA cluster.",
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "true",
       "Type": "String"
     },
     "ArtifactoryIsHaPrimary": {
@@ -906,58 +919,61 @@
                 "runcmd:\n",
                 "  - |-\n",
                 "      # Artifactory global-envs\n",
-                "      export ARTIFACTORY_HOME=",
+                "      export ARTIFACTORY_HOME=\"",
                 {
                   "Ref": "ArtifactoryHome"
                 },
-                "\n",
-                "      export ARTIFACTORY_ETC=${ARTIFACTORY_HOME}/etc\n",
-                "      export ARTIFACTORY_LOGS=${ARTIFACTORY_HOME}/logs\n",
-                "      export ARTIFACTORY_VARS=${ARTIFACTORY_HOME}/etc/default\n",
-                "      export ARTIFACTORY_TOMCAT_HOME=${ARTIFACTORY_HOME}/tomcat\n",
-                "      export ARTIFACTORY_CL_PRIM=",
+                "\"\n",
+                "      export ARTIFACTORY_ETC=\"${ARTIFACTORY_HOME}/etc\"\n",
+                "      export ARTIFACTORY_LOGS=\"${ARTIFACTORY_HOME}/logs\"\n",
+                "      export ARTIFACTORY_VARS=\"${ARTIFACTORY_HOME}/etc/default\"\n",
+                "      export ARTIFACTORY_TOMCAT_HOME=\"${ARTIFACTORY_HOME}/tomcat\"\n",
+                "      export ARTIFACTORY_CL_MMBR=\"",
+                         { "Ref": "ArtifactoryIsHaMember" },
+                         "\"\n",
+                "      export ARTIFACTORY_CL_PRIM=\"",
                          { "Ref": "ArtifactoryIsHaPrimary" },
-                         "\n",
-                "      export ARTIFACTORY_HABUNDLE=",
+                         "\"\n",
+                "      export ARTIFACTORY_HABUNDLE=\"",
                          { "Ref": "ArtifactoryHaBundleUrl" },
-                         "\n",
-                "      export ARTIFACTORY_DBINST=",
+                         "\"\n",
+                "      export ARTIFACTORY_DBINST=\"",
                 {
                   "Ref": "ArtifactoryDbInst"
                 },
-                "\n",
-                "      export ARTIFACTORY_DBUSER=",
+                "\"\n",
+                "      export ARTIFACTORY_DBUSER=\"",
                 {
                   "Ref": "ArtifactoryDbAdmin"
                 },
-                "\n",
-                "      export ARTIFACTORY_DBPASS=",
+                "\"\n",
+                "      export ARTIFACTORY_DBPASS=\"",
                 {
                   "Ref": "ArtifactoryDbPassword"
                 },
-                "\n",
-                "      export ARTIFACTORY_DBHOST=",
+                "\"\n",
+                "      export ARTIFACTORY_DBHOST=\"",
                 {
                   "Ref": "ArtifactoryDbHost"
                 },
-                "\n",
-                "      export ARTIFACTORY_DBPORT=",
+                "\"\n",
+                "      export ARTIFACTORY_DBPORT=\"",
                 {
                   "Ref": "ArtifactoryDbPort"
                 },
-                "\n",
+                "\"\n",
                 "      \n",
                 "      # For tiered-storage Setup\n",
-                "      export ARTIFACTORY_BUCKET=",
+                "      export ARTIFACTORY_BUCKET=\"",
                 {
                   "Ref": "ArtifactoryArtifactBucket"
                 },
-                "\n",
-                "      export ARTIFACTORY_ROLE=",
+                "\"\n",
+                "      export ARTIFACTORY_ROLE=\"",
                 {
                   "Ref": "InstanceRole"
                 },
-                "\n",
+                "\"\n",
                 "      \n",
                 "      env | grep ARTIFACTORY > /root/AF.envs\n",
                 "      \n",

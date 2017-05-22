@@ -20,6 +20,7 @@ ARTIFACTORY_DBHOST="${ARTIFACTORY_DBHOST:-UNDEF}"
 ARTIFACTORY_DBPORT="${ARTIFACTORY_DBPORT:-5432}"
 ARTIFACTORY_RPM=jfrog-artifactory-pro
 ARTIFACTORY_LICKEY=${ARTIFACTORY_ETC}/artifactory.lic
+DBPROPERTIES="${ARTIFACTORY_ETC}/db.properties"
 SELSRC=${ARTIFACTORY_ETC}/mimetypes.xml
 
 ## Try not to let any prior stytem-hardening cause
@@ -73,6 +74,9 @@ function CreateDbProperties {
       mv "${DBPROPERTIES}" "${DBPROPERTIES}.BAK-${DATE}" || \
         err_exit "Failed to preserve existing '${DBPROPERTIES}' file"
    fi
+
+   # Locate example contents
+   SRCPGSQLCONF=$(rpm -ql ${ARTIFACTORY_RPM} | grep postgresql.properties)
 
    # Grab header-content from RPM's example file
    grep ^# "${SRCPGSQLCONF}" > "${DBPROPERTIES}" || \

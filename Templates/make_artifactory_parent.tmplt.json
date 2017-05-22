@@ -40,6 +40,7 @@
             "SecurityGroupIds",
             "SubnetIds",
             "ArtifactoryHaBundleUrl",
+            "ArtifactoryIsHaMember",
             "ArtifactoryIsHaPrimary",
             "NoPublicIp",
             "NoReboot"
@@ -153,6 +154,9 @@
         },
         "ArtifactoryHaBundleUrl": {
           "default": "HA config-bundle"
+        },
+        "ArtifactoryIsHaMember": {
+          "default": "Is HA cluster member"
         },
         "ArtifactoryIsHaPrimary": {
           "default": "HA sole/primary node"
@@ -300,6 +304,15 @@
     "ArtifactoryHostTemplate": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Description": "URL to the child-template for creating the Artifactory-host EC2 instance.",
+      "Type": "String"
+    },
+    "ArtifactoryIsHaMember": {
+      "Description": "Whether instance is a member of an HA cluster.",
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "true",
       "Type": "String"
     },
     "ArtifactoryIsHaPrimary": {
@@ -548,6 +561,9 @@
           },
           "ArtifactoryHome": {
             "Ref": "ArtifactoryHome"
+          },
+          "ArtifactoryIsHaMember": {
+            "Ref": "ArtifactoryIsHaMember"
           },
           "ArtifactoryIsHaPrimary": {
             "Ref": "ArtifactoryIsHaPrimary"
