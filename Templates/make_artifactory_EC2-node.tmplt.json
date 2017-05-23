@@ -87,7 +87,8 @@
             "ArtifactoryOsPrepScriptUrl",
             "ArtifactoryDbPropsScriptUrl",
             "ArtifactoryStorageScriptUrl",
-            "ArtifactoryHaSetupScriptUrl"
+            "ArtifactoryHaSetupScriptUrl",
+            "ArtifactoryBkupScriptUrl"
           ]
         },
         {
@@ -185,6 +186,9 @@
          },
          "ArtifactoryArtifactBucket": {
            "default" : "Artifact Bucket"
+         },
+         "ArtifactoryBkupScriptUrl": {
+           "default" : "URL of backup script"
          },
          "ArtifactoryDbAdmin": {
            "default" : "Master database administrator"
