@@ -1,4 +1,5 @@
 #!/bin/bash
+# shellcheck disable=SC2015,SC2086
 #
 # Move artifactory backups to S3
 #
