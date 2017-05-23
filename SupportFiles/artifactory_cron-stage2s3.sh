@@ -4,12 +4,11 @@
 #
 #################################################################
 PROGNAME="$(basename $0)"
-S3BUCKET="dotc-artifactory-artifact"
+S3BUCKET="##ARTIFACTORY_BUCKET##"
 S3FOLDER="backups"
 BAKUPDIR="/var/backups"
-BACKUPFILES=($(find "${BAKUPDIR}" -name lost+found -prune \
-               -o -type f -name "*.zip" -print))
 
+# Error/exit routine
 function err_exit {
    local ERRSTR="${1}"
 
@@ -20,12 +19,17 @@ function err_exit {
 }
 
 
+# Identify backup targets
+BACKUPFILES=($(find "${BAKUPDIR}" -name lost+found -prune \
+               -o -type f -name "*.zip" -print))
+
+# Backup any ZIPfile found in staging directory
 if [[ ${#BACKUPFILES[@]} -gt 0 ]]
 then
-   for BKUP in ${BACKUPFILES[@]}
+   for BKUP in "${BACKUPFILES[@]}"
    do
       BKUPF="$(basename ${BKUP})"
-      echo "Found ${#BACKUPFILES[@]} staged backup files in ${BKUPDIR}"
+      echo "Found ${#BACKUPFILES[@]} staged backup files in ${BAKUPDIR}"
       FOUND=$(aws s3 ls "s3://${S3BUCKET}/${S3FOLDER}/${BKUPF}" > /dev/null)$?
       if [[ ${FOUND} -ne 0 ]]
       then
@@ -41,5 +45,5 @@ then
       fi
    done
 else
-   echo "Found no staged backup files in ${BKUPDIR}"
+   echo "Found no staged backup files in ${BAKUPDIR}"
 fi
