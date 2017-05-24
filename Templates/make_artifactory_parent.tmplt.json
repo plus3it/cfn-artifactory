@@ -22,7 +22,8 @@
             "ArtifactoryOsPrepScriptUrl",
             "ArtifactoryDbPropsScriptUrl",
             "ArtifactoryStorageScriptUrl",
-            "ArtifactoryHaSetupScriptUrl"
+            "ArtifactoryHaSetupScriptUrl",
+            "ArtifactoryBkupScriptUrl"
           ]
         },
         {
@@ -115,6 +116,9 @@
         },
         "AppVolumeSize": {
           "default": "Artifactory Cache Size"
+        },
+        "ArtifactoryBkupScriptUrl": {
+          "default": "Backup script URL"
         },
         "ArtifactoryDbAdmin": {
           "default": "Master database administrator"
@@ -239,6 +243,11 @@
       ],
       "Default": "gp2",
       "Description": "Type of EBS volume to create. Ignored if \"AppVolumeDevice\" is blank",
+      "Type": "String"
+    },
+    "ArtifactoryBkupScriptUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "Cron-script for moving Artifactory backups to S3",
       "Type": "String"
     },
     "ArtifactBucket": {

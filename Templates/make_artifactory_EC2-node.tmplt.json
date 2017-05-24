@@ -87,7 +87,8 @@
             "ArtifactoryOsPrepScriptUrl",
             "ArtifactoryDbPropsScriptUrl",
             "ArtifactoryStorageScriptUrl",
-            "ArtifactoryHaSetupScriptUrl"
+            "ArtifactoryHaSetupScriptUrl",
+            "ArtifactoryBkupScriptUrl"
           ]
         },
         {
@@ -185,6 +186,9 @@
          },
          "ArtifactoryArtifactBucket": {
            "default" : "Artifact Bucket"
+         },
+         "ArtifactoryBkupScriptUrl": {
+           "default" : "URL of backup script"
          },
          "ArtifactoryDbAdmin": {
            "default" : "Master database administrator"
@@ -355,6 +359,11 @@
       "Description": "S3 Bucket to host Artifactory's long-term artifact content.",
       "Type": "String"
     },
+    "ArtifactoryBkupScriptUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "Cron-script for moving Artifactory backups to S3",
+      "Type": "String"
+    },
     "ArtifactoryDbAdmin": {
       "AllowedPattern": "[a-z0-9]{6,16}+",
       "ConstraintDescription": "Alphanumeric string between 6 and 12 characters.",
@@ -389,11 +398,6 @@
       "Description": "URL to script that performs DB-client configuration actions for Artifactory",
       "Type": "String"
     },
-    "Domainname": {
-      "ConstraintDescription": "An alphanumeric string to complete the domain portion of the instance's FQDN.",
-      "Description": "Suffix for Artifactory's hostname and DNS record",
-      "Type": "String"
-    },
     "ArtifactoryHaBundleUrl": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Description": "Url of Artifactory HA node bundle file.",
@@ -426,6 +430,11 @@
         "false"
       ],
       "Default": "true",
+      "Type": "String"
+    },
+    "Domainname": {
+      "ConstraintDescription": "An alphanumeric string to complete the domain portion of the instance's FQDN.",
+      "Description": "Suffix for Artifactory's hostname and DNS record",
       "Type": "String"
     },
     "Hostname": {
@@ -1124,8 +1133,21 @@
                 {
                   "Ref": "ArtifactoryHaSetupScriptUrl"
                 },
-                " | tee /root/ha-setup.sh | bash || err_exit \"HA",
+                " | tee /root/ha-setup.sh | bash || err_exit \"HA ",
                 "node configuration script failed to run to proper completion-state.\"\n",
+                "      \n",
+                "      # Install Artifactory Backup cron-script\n",
+                "      curl -skL ",
+                          { "Ref": "ArtifactoryBkupScriptUrl" },
+                       " | sed 's/##ARTIFACTORY_BUCKET##/",
+                          { "Ref": "ArtifactoryArtifactBucket" },
+                       "/' > /usr/local/bin/stage2s3.sh\n",
+                "      (crontab -lu artifactory 2>/dev/null; echo \"",
+                       "30 1 * * * /usr/local/bin/stage2s3.sh\")",
+                       " | crontab -u artifactory -\n",
+                "      chmod 755 /usr/local/bin/stage2s3.sh\n",
+                "      cp -Z /etc/cron.deny /etc/cron.allow\n",
+                "      echo artifactory > /etc/cron.allow\n",
                 "      \n",
                 "      # Start Artifactory\n",
                 "      setenforce 0\n",
