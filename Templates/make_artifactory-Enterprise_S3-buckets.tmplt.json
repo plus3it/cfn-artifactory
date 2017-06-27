@@ -1,0 +1,28 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "This template sets up the Buckets used by Artifactory for S3-based storage",
+  "Resources": {
+    "Artifacts": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "AccessControl": "BucketOwnerFullControl"
+      }
+    },
+    "Backups": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "AccessControl": "BucketOwnerFullControl"
+      }
+    }
+  },
+  "Outputs": {
+    "ArtifactBucket": {
+      "Value": { "Ref": "Artifacts" },
+      "Description": "Artifactory S3 artifact bucket name."
+    },
+    "BackupBucket": {
+      "Value": { "Ref": "Backups" },
+      "Description": "Artifactory S3 backup bucket name."
+    }
+  }
+}

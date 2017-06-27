@@ -1,0 +1,114 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Conditions": {},
+  "Description": "This template deployes a small, single-AZ PGSQL database to support Artifactory.",
+  "Mappings": {},
+  "Metadata": {},
+  "Outputs": {
+    "RdsEndpointAddress": {
+      "Value": { "Fn::GetAtt" : [ "RDSdb", "Endpoint.Address" ] },
+      "Description": "RDS DB's endpoint FQDN."
+    }
+  },
+  "Parameters": {
+    "DbAdminName": {
+      "Description": "Name of the Artifactory master database-user.",
+      "Type": "String"
+    },
+    "DbAdminPass": {
+      "Description": "Password of the Artifactory master database-user.",
+      "Type": "String"
+    },
+    "DbDataSize": {
+      "ConstraintDescription": "Must be between 5GB and 16384GB.",
+      "Default": "5",
+      "Description": "Size in GiB of the RDS table-space to create.",
+      "MaxValue": "16384",
+      "MinValue": "5",
+      "Type": "Number"
+    },
+    "DbNodeName": {
+      "Description": "NodeName of the Artifactory database.",
+      "Type": "String"
+    },
+    "DbInstanceName": {
+      "Description": "Instance-name of the Artifactory database.",
+      "Type": "String"
+    },
+    "DbInstanceType": {
+      "AllowedValues": [
+        "db.t2.micro",
+        "db.t2.small",
+        "db.t2.medium",
+        "db.t2.large",
+        "db.m3.medium",
+        "db.m3.large",
+        "db.m3.xlarge",
+        "db.m3.2xlarge",
+        "db.m4.large",
+        "db.m4.xlarge",
+        "db.m4.2xlarge",
+        "db.m4.4xlarge"
+      ],
+      "Default": "db.t2.small",
+      "Description": "Amazon RDS instance type",
+      "Type": "String"
+    },
+    "DbSecurityGroup": {
+      "Description": "List of security groups to apply to the RDS database.",
+      "Type": "List<AWS::EC2::SecurityGroup::Id>"
+    },
+    "DbSubnets" : {
+      "Type" : "List<AWS::EC2::Subnet::Id>",
+      "Description" : "Select at least two subnets, each in different Availability Zones"
+    },
+    "PgsqlVersion": {
+      "AllowedValues": [
+        "9.6.2",
+        "9.6.1",
+        "9.5.6",
+        "9.5.4",
+        "9.5.2"
+      ],
+      "Default": "9.6.2",
+      "Description": "The X.Y.Z version of the PostGreSQL database to deploy.",
+      "Type": "String"
+    },
+    "TargetVPC": {
+      "AllowedPattern": "^vpc-[0-9a-f]*$",
+      "Description": "ID of the VPC to deploy cluster nodes into.",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "RDSdb": {
+      "Metadata": {},
+      "Properties": {
+        "AllocatedStorage": { "Ref": "DbDataSize" },
+        "AllowMajorVersionUpgrade": "true",
+        "AutoMinorVersionUpgrade": "true",
+        "BackupRetentionPeriod": "7",
+        "DBInstanceClass": { "Ref": "DbInstanceType" },
+        "DBInstanceIdentifier": { "Ref": "DbNodeName" },
+        "DBName": { "Ref": "DbInstanceName" },
+        "DBSubnetGroupName" : { "Ref" : "RDSdbSubnetGroup" },
+        "Engine": "postgres",
+        "EngineVersion": { "Ref": "PgsqlVersion" },
+        "MasterUsername": { "Ref": "DbAdminName" },
+        "MasterUserPassword": { "Ref": "DbAdminPass" },
+        "PreferredBackupWindow": "23:30-00:00",
+        "PreferredMaintenanceWindow": "sun:00:30-sun:01:00",
+        "PubliclyAccessible": "false",
+        "VPCSecurityGroups": { "Ref": "DbSecurityGroup" }
+      },
+      "Type": "AWS::RDS::DBInstance"
+    },
+    "RDSdbSubnetGroup": {
+      "Type" : "AWS::RDS::DBSubnetGroup",
+      "Properties" : {
+        "DBSubnetGroupDescription" : "Subnets available for the RDS DB Instance",
+        "SubnetIds" : { "Ref" : "DbSubnets" }
+      }
+    }
+  }
+}

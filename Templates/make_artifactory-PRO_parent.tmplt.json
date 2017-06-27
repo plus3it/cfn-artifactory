@@ -1,0 +1,572 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "This template coordinates the running of the Artifactory S3, IAM and EC2 templates.",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "Child Templates"
+          },
+          "Parameters": [
+            "RdsTemplateUri",
+            "IamTemplateUri",
+            "Ec2TemplateUri",
+            "BucketTemplateUri",
+            "SgTemplateUri"
+          ]
+        },
+        {
+          "Label": {
+            "default": "EC2 Parameters"
+          },
+          "Parameters": [
+            "AmiId",
+            "InstanceType",
+            "ProvisionUser",
+            "KeyPairName",
+            "AdminPubkeyURL",
+            "Hostname",
+            "Domainname",
+            "SubnetIds",
+            "NoPublicIp",
+            "NoReboot"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Artifactory App Parameters"
+          },
+          "Parameters": [
+            "ArtifactoryOsPrepScriptUrl",
+            "ArtifactoryAppInstallScriptUrl",
+            "ArtifactoryLicenseUrl",
+            "JfrogRepositoryName",
+            "JfrogRepositoryUrl",
+            "ArtifactoryRpm",
+            "ArtifactoryHome"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Artifactory Storage"
+          },
+          "Parameters": [
+            "AppVolumeDevice",
+            "AppVolumeSize",
+            "AppVolumeType",
+            "AppVolumeMountPath",
+            "BackupVolumeDevice",
+            "BackupVolumeSize",
+            "BackupVolumeType",
+            "BackupVolumeMountPath"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Database Parameters"
+          },
+          "Parameters": [
+            "DbInstanceType",
+            "PgsqlVersion",
+            "DbDataSize",
+            "DbInstanceName",
+            "DbNodeName",
+            "ArtifactoryDbPort",
+            "DbAdminName",
+            "DbAdminPass"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Miscellaneous Parameters"
+          },
+          "Parameters": [
+            "TargetVPC",
+            "CfnEndpointUrl",
+            "EpelRepo",
+            "PyStache",
+            "PipRpm",
+            "PipIndexFips"
+          ]
+        }
+      ],
+      "ParameterLabels": {
+        "BucketTemplateUri": {
+          "default": "S3 Template"
+        },
+        "Ec2TemplateUri": {
+          "default": "Instance Template"
+        },
+
+        "IamTemplateUri": {
+          "default": "IAM Template"
+        },
+        "RdsTemplateUri": {
+          "default": "Database Template"
+        },
+        "SgTemplateUri": {
+          "default": "SecurityGroups Template"
+        }
+      }
+    }
+  },
+  "Outputs": {},
+  "Parameters": {
+    "AdminPubkeyURL": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL the file containing the admin users' SSH public keys.",
+      "Type": "String"
+    },
+    "AmiId": {
+      "AllowedPattern": "^ami-[0-9a-z]{8}$|^ami-[0-9a-z]{17}$",
+      "Description": "ID of the AMI to launch",
+      "Type": "String"
+    },
+    "AppVolumeDevice": {
+      "AllowedValues": [
+        "",
+        "/dev/xvdf",
+        "/dev/xvdg",
+        "/dev/xvdh",
+        "/dev/xvdi",
+        "/dev/xvdj"
+      ],
+      "Default": "",
+      "Description": "Device to mount an extra EBS volume. Leave blank to launch without an extra application volume",
+      "Type": "String"
+    },
+    "AppVolumeMountPath": {
+      "AllowedPattern": "/.*",
+      "Default": "/var/cache/artifactory",
+      "Description": "Filesystem path to mount the extra app volume. Ignored if \"AppVolumeDevice\" is blank",
+      "Type": "String"
+    },
+    "AppVolumeSize": {
+      "ConstraintDescription": "Must be between 1GB and 16384GB.",
+      "Default": "10",
+      "Description": "Size in GB of the EBS volume to create. Ignored if \"AppVolumeDevice\" is blank",
+      "MaxValue": "16384",
+      "MinValue": "10",
+      "Type": "Number"
+    },
+    "AppVolumeType": {
+      "AllowedValues": [
+        "gp2",
+        "io1",
+        "sc1",
+        "st1",
+        "standard"
+      ],
+      "Default": "gp2",
+      "Description": "Type of EBS volume to create. Ignored if \"AppVolumeDevice\" is blank",
+      "Type": "String"
+    },
+    "ArtifactoryAppInstallScriptUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to script that installs Artifactory to the EC2 instance.",
+      "Type": "String"
+    },
+    "ArtifactoryDbPort": {
+      "ConstraintDescription": "Must be between 1024 and 61000.",
+      "Default": "5432",
+      "Description": "The port-number the remote PostGreSQL server is listening on.",
+      "MaxValue": "61000",
+      "MinValue": "1025",
+      "Type": "Number"
+    },
+    "ArtifactoryHome": {
+      "ConstraintDescription": "An LSB-compliant, slash-delimited directory-path.",
+      "Default": "/var/opt/jfrog/artifactory",
+      "Description": "The root installation location for the Artifactory application.",
+      "Type": "String"
+    },
+    "ArtifactoryLicenseUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to Artifactory license file",
+      "Type": "String"
+    },
+    "ArtifactoryOsPrepScriptUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to script that prepares the EC2 instance's host OS for installation of Artifactory",
+      "Type": "String"
+    },
+    "ArtifactoryRpm": {
+      "Default": "jfrog-artifactory-pro",
+      "Description": "Name of the Artifactory installation-RPM.",
+      "Type": "String"
+    },
+    "BackupVolumeDevice": {
+      "AllowedValues": [
+        "",
+        "/dev/xvdk",
+        "/dev/xvdl",
+        "/dev/xvdm",
+        "/dev/xvdn",
+        "/dev/xvdo"
+      ],
+      "Default": "",
+      "Description": "Device to mount an backup-staging location. Leave blank to launch without a backup-staging volume",
+      "Type": "String"
+    },
+    "BackupVolumeMountPath": {
+      "AllowedPattern": "/.*",
+      "Default": "/var/backups",
+      "Description": "Filesystem path to mount the backup-stageing volume. Ignored if \"BackupVolumeDevice\" is blank",
+      "Type": "String"
+    },
+    "BackupVolumeSize": {
+      "ConstraintDescription": "Must be between 1GB and 16384GB.",
+      "Default": "10",
+      "Description": "Size in GB of the EBS volume to create. Ignored if \"BackupVolumeDevice\" is blank",
+      "MaxValue": "16384",
+      "MinValue": "10",
+      "Type": "Number"
+    },
+    "BackupVolumeType": {
+      "AllowedValues": [
+        "gp2",
+        "io1",
+        "sc1",
+        "st1",
+        "standard"
+      ],
+      "Default": "gp2",
+      "Description": "Type of EBS volume to create. Ignored if \"BackupVolumeDevice\" is blank",
+      "Type": "String"
+    },
+    "BucketTemplateUri": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URI for the template that creates Artifactory's S3 buckets.",
+      "Type": "String"
+    },
+    "CfnEndpointUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Default": "",
+      "Description": "URL to the CloudFormation Endpoint. e.g. https://cloudformation.us-east-1.amazonaws.com",
+      "Type": "String"
+    },
+    "DbAdminName": {
+      "Description": "Name of the Sonarqube master database-user.",
+      "Type": "String"
+    },
+    "DbAdminPass": {
+      "Description": "Password of the Artifactory master database-user.",
+      "Type": "String"
+    },
+    "DbDataSize": {
+      "ConstraintDescription": "Must be between 5GB and 16384GB.",
+      "Default": "5",
+      "Description": "Size in GiB of the RDS table-space to create.",
+      "MaxValue": "16384",
+      "MinValue": "5",
+      "Type": "Number"
+    },
+    "DbInstanceName": {
+      "Description": "Instance-name of the Sonarqube database.",
+      "Type": "String"
+    },
+    "DbInstanceType": {
+      "AllowedValues": [
+        "db.t2.micro",
+        "db.t2.small",
+        "db.t2.medium",
+        "db.t2.large",
+        "db.m3.medium",
+        "db.m3.large",
+        "db.m3.xlarge",
+        "db.m3.2xlarge",
+        "db.m4.large",
+        "db.m4.xlarge",
+        "db.m4.2xlarge",
+        "db.m4.4xlarge"
+      ],
+      "Default": "db.t2.small",
+      "Description": "Amazon RDS instance type",
+      "Type": "String"
+    },
+    "DbNodeName": {
+      "Description": "NodeName of the Artifactory database.",
+      "Type": "String"
+    },
+    "DbSubnets" : {
+      "Type" : "List<AWS::EC2::Subnet::Id>",
+      "Description" : "Select at least two subnets, each in different Availability Zones"
+    },
+    "Domainname": {
+      "ConstraintDescription": "An alphanumeric string to complete the domain portion of the instance's FQDN.",
+      "Description": "Suffix for Artifactory's hostname and DNS record",
+      "Type": "String"
+    },
+    "Ec2TemplateUri": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URI for the template that creates Artifactory's application-hosting EC2 instance.",
+      "Type": "String"
+    },
+    "EpelRepo": {
+      "AllowedPattern": "^[a-z][a-z0-9-]*$",
+      "ConstraintDescription": "An alphanumeric string that represents the EPEL yum repo's label.",
+      "Default": "epel",
+      "Description": "Name of network's EPEL repo.",
+      "Type": "String"
+    },
+    "Hostname": {
+      "ConstraintDescription": "An alphanumeric string to complete the hostname portion of the instance's FQDN.",
+      "Default": "artifactory",
+      "Description": "Node-name for Artifactory's hostname and DNS record",
+      "Type": "String"
+    },
+    "IamTemplateUri": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URI for the template that creates Artifactory's Instance roles.",
+      "Type": "String"
+    },
+    "InstanceType": {
+      "AllowedValues": [
+        "t2.micro",
+        "t2.small",
+        "t2.medium",
+        "t2.large",
+        "t2.xlarge",
+        "t2.2xlarge",
+        "m3.medium",
+        "m3.large",
+        "m3.xlarge",
+        "m3.2xlarge",
+        "m4.large",
+        "m4.xlarge",
+        "m4.2xlarge",
+        "m4.4xlarge",
+        "m4.10xlarge",
+        "m4.16xlarge",
+        "c3.large",
+        "c3.xlarge",
+        "c3.2xlarge",
+        "c3.4xlarge",
+        "c3.8xlarge",
+        "c4.large",
+        "c4.xlarge",
+        "c4.2xlarge",
+        "c4.4xlarge",
+        "c4.8xlarge"
+      ],
+      "Default": "t2.large",
+      "Description": "Amazon EC2 instance type",
+      "Type": "String"
+    },
+    "JfrogRepositoryName": {
+      "Default": "bintray--jfrog-artifactory-pro-rpms",
+      "Description": "Name of the yum repository hosting Artifactory RPMs.",
+      "Type": "String"
+    },
+    "JfrogRepositoryUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Default": "http://jfrog.bintray.com/artifactory-pro-rpms",
+      "Description": "Base-URL of the yum repository hosting Artifactory RPMs.",
+      "Type": "String"
+    },
+    "KeyPairName": {
+      "Description": "Public/private key pairs allowing the provisioning-user to securely connect to the instance after it launches.",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "NoPublicIp": {
+      "AllowedValues": [
+        "false",
+        "true"
+      ],
+      "Default": "true",
+      "Description": "Controls whether to assign the instance a public IP. Recommended to leave at \"true\" _unless_ launching in a public subnet",
+      "Type": "String"
+    },
+    "NoReboot": {
+      "AllowedValues": [
+        "false",
+        "true"
+      ],
+      "Default": "false",
+      "Description": "Controls whether to reboot the instance as the last step of cfn-init execution",
+      "Type": "String"
+    },
+    "PgsqlVersion": {
+      "AllowedValues": [
+        "9.6.2",
+        "9.6.1",
+        "9.5.6",
+        "9.5.4",
+        "9.5.2"
+      ],
+      "Default": "9.6.2",
+      "Description": "The X.Y.Z version of the PostGreSQL database to deploy.",
+      "Type": "String"
+    },
+    "PipIndexFips": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Default": "https://pypi.org/simple/",
+      "Description": "URL of pip index  that is compatible with FIPS 140-2 requirements.",
+      "Type": "String"
+    },
+    "PipRpm": {
+      "Default": "python2-pip",
+      "Description": "Name of preferred pip RPM.",
+      "Type": "String"
+    },
+    "ProvisionUser": {
+      "AllowedPattern": "[a-z0-9]{6,12}+",
+      "ConstraintDescription": "Alphanumeric string between 6 and 12 characters.",
+      "Default": "artibuild",
+      "Description": "Default login user account name.",
+      "Type": "String"
+    },
+    "PyStache": {
+      "Default": "pystache",
+      "Description": "Name of preferred pystache RPM.",
+      "Type": "String"
+    },
+    "RdsTemplateUri": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URI for the template that creates Artifactory's RDS-hoste PGSQL DB.",
+      "Type": "String"
+    },
+    "SgTemplateUri": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URI for the template that creates Artifactory's SGs.",
+      "Type": "String"
+    },
+    "SubnetIds": {
+      "Description": "Subnet to associate to the EC2 Instance",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "TargetVPC": {
+      "AllowedPattern": "^vpc-[0-9a-f]*$",
+      "Description": "ID of the VPC to deploy cluster nodes into.",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "Ec2Res": {
+      "DependsOn": "RdsRes",
+      "Properties": {
+        "Parameters": {
+          "AdminPubkeyURL": { "Ref": "AdminPubkeyURL" },
+          "AmiId": { "Ref": "AmiId" },
+          "AppVolumeDevice": { "Ref": "AppVolumeDevice" },
+          "AppVolumeMountPath": { "Ref": "AppVolumeMountPath" },
+          "AppVolumeSize": { "Ref": "AppVolumeSize" },
+          "AppVolumeType": { "Ref": "AppVolumeType" },
+          "ArtifactoryAppInstallScriptUrl": {
+            "Ref": "ArtifactoryAppInstallScriptUrl"
+          },
+          "ArtifactoryDbAdmin": { "Ref": "DbAdminName" },
+          "ArtifactoryDbHost": {
+            "Fn::GetAtt": [ "RdsRes", "Outputs.RdsEndpointAddress" ]
+          },
+          "ArtifactoryDbInst": { "Ref": "DbInstanceName" },
+          "ArtifactoryDbPassword": { "Ref": "DbAdminPass" },
+          "ArtifactoryDbPort": { "Ref": "ArtifactoryDbPort" },
+          "ArtifactoryHome": { "Ref": "ArtifactoryHome" },
+          "ArtifactoryLicenseUrl": { "Ref": "ArtifactoryLicenseUrl"},
+          "ArtifactoryOsPrepScriptUrl": {
+            "Ref": "ArtifactoryOsPrepScriptUrl"
+          },
+          "ArtifactoryRpm": { "Ref": "ArtifactoryRpm" },
+          "BackupVolumeDevice": { "Ref": "BackupVolumeDevice" },
+          "BackupVolumeMountPath": { "Ref": "BackupVolumeMountPath" },
+          "BackupVolumeSize": { "Ref": "BackupVolumeSize" },
+          "BackupVolumeType": { "Ref": "BackupVolumeType" },
+          "CfnEndpointUrl": { "Ref": "CfnEndpointUrl" },
+          "Domainname": { "Ref": "Domainname" },
+          "EpelRepo": { "Ref": "EpelRepo" },
+          "Hostname": { "Ref": "Hostname" },
+          "InstanceProfile": {
+            "Fn::GetAtt": [ "IamRes", "Outputs.InstanceRoleProfile" ]
+          },
+          "InstanceRole": {
+            "Fn::GetAtt": [ "IamRes", "Outputs.InstanceRole" ]
+          },
+          "InstanceType": { "Ref": "InstanceType" },
+          "JfrogRepositoryName": { "Ref": "JfrogRepositoryName" },
+          "JfrogRepositoryUrl": { "Ref": "JfrogRepositoryUrl" },
+          "KeyPairName": { "Ref": "KeyPairName" },
+          "NoPublicIp": { "Ref": "NoPublicIp" },
+          "NoReboot": { "Ref": "NoReboot" },
+          "PipIndexFips": { "Ref": "PipIndexFips" },
+          "PipRpm": { "Ref": "PipRpm" },
+          "ProvisionUser": { "Ref": "ProvisionUser" },
+          "PyStache": { "Ref": "PyStache" },
+          "S3BackupBucket": {
+            "Fn::GetAtt": [ "S3Res", "Outputs.BackupBucket" ]
+          },
+          "SecurityGroupIds": {
+            "Fn::Join": [
+              ",",
+              [
+                { "Fn::GetAtt": [ "SgRes", "Outputs.AppSg" ] },
+                { "Fn::GetAtt": [ "SgRes", "Outputs.NasSg" ] },
+                { "Fn::GetAtt": [ "SgRes", "Outputs.RdsSg" ] }
+              ]
+            ]
+          },
+          "SubnetIds": { "Ref": "SubnetIds" }
+        },
+        "TemplateURL": { "Ref": "Ec2TemplateUri" }
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "IamRes": {
+      "DependsOn": "S3Res",
+      "Properties": {
+        "Parameters": {
+          "BackupBucket": {
+            "Fn::GetAtt": [ "S3Res", "Outputs.BackupBucket" ]
+          }
+        },
+        "TemplateURL": { "Ref": "IamTemplateUri" },
+        "TimeoutInMinutes": "10"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "RdsRes": {
+      "DependsOn": "SgRes",
+      "Properties": {
+        "Parameters": {
+          "DbAdminName": { "Ref": "DbAdminName" },
+          "DbAdminPass": { "Ref": "DbAdminPass" },
+          "DbDataSize": { "Ref": "DbDataSize" },
+          "DbInstanceName": { "Ref": "DbInstanceName" },
+          "DbInstanceType": { "Ref": "DbInstanceType" },
+          "DbNodeName": { "Ref": "DbNodeName" },
+          "DbSecurityGroup": {
+            "Fn::GetAtt": [ "SgRes", "Outputs.RdsSg" ]
+          },
+          "DbSubnets": {
+            "Fn::Join": [
+              ",",
+              { "Ref": "DbSubnets" }
+            ]
+          },
+          "PgsqlVersion": { "Ref": "PgsqlVersion" },
+          "TargetVPC": { "Ref": "TargetVPC" }
+        },
+        "TemplateURL": { "Ref": "RdsTemplateUri" }
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "S3Res": {
+      "Properties": {
+        "TemplateURL": { "Ref": "BucketTemplateUri" },
+        "TimeoutInMinutes": "10"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "SgRes": {
+      "Properties": {
+        "Parameters": {
+          "TargetVPC": { "Ref": "TargetVPC" }
+        },
+        "TemplateURL": { "Ref": "SgTemplateUri" },
+        "TimeoutInMinutes": "10"
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    }
+  }
+}
