@@ -154,6 +154,7 @@ password=${PGSQLPASS}
 EOF
 
 # Make sure the properites file actually got created/updated
+# shellcheck disable=SC2181
 if [[ $? -eq 0 ]]
 then
    echo "Success!"
@@ -178,6 +179,7 @@ then
 
    ##
    ## Bail if the offered binarystore.xml directory doesn't exist
+   # shellcheck disable=SC2086
    if [[ ! -d $(dirname "${BINSTORXML}") ]]
    then
       err_exit "Aborting: no such directory '$(dirname ${BINSTORXML})'."

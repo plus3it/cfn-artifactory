@@ -95,6 +95,7 @@ password=${ARTIFACTORY_DBPASS}
 EOF
 
    # Make sure the properites file actually got created/updated
+   # shellcheck disable=SC2181
    if [[ $? -ne 0 ]]
    then
       err_exit "Error creating new '${DBPROPERTIES}' file. Aborting."

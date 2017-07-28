@@ -65,6 +65,7 @@ primary=${ISPRIMARY}
 hazelcast.interface=${NODEIPADDR}
 EOF
 
+# shellcheck disable=SC2181
 if [[ $? -eq 0 ]]
 then
    echo "Successfully created ${HACONF}"
