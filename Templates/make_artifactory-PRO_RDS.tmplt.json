@@ -1,6 +1,14 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Conditions": {},
+  "Conditions": {
+    "SetNodeName": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [ { "Ref": "DbNodeName" }, "" ]
+        }
+      ]
+    }
+  },
   "Description": "This template deployes a small, single-AZ PGSQL database to support Artifactory.",
   "Mappings": {},
   "Metadata": {},
@@ -77,7 +85,7 @@
     "TargetVPC": {
       "AllowedPattern": "^vpc-[0-9a-f]*$",
       "Description": "ID of the VPC to deploy cluster nodes into.",
-      "Type": "String"
+      "Type": "AWS::EC2::VPC::Id"
     }
   },
   "Resources": {
@@ -89,7 +97,13 @@
         "AutoMinorVersionUpgrade": "true",
         "BackupRetentionPeriod": "7",
         "DBInstanceClass": { "Ref": "DbInstanceType" },
-        "DBInstanceIdentifier": { "Ref": "DbNodeName" },
+        "DBInstanceIdentifier": {
+          "Fn::If": [
+            "SetNodeName",
+            { "Ref": "DbNodeName" },
+            { "Ref": "AWS::NoValue" }
+          ]
+        },
         "DBName": { "Ref": "DbInstanceName" },
         "DBSubnetGroupName" : { "Ref" : "RDSdbSubnetGroup" },
         "Engine": "postgres",
