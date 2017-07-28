@@ -112,7 +112,7 @@
         },
         {
           "Label": {
-            "default": "Instance - (Optional) Artifact Cache"
+            "default": "Instance - (Optional) Extra Artifact Storage"
           },
           "Parameters": [
             "AppVolumeSize",
@@ -173,10 +173,10 @@
            "default" : "Supplemental SSH Keys"
          },
          "AppVolumeSize": {
-           "default" : "Artifactory Cache Size"
+           "default" : "Artifactory Artifact-storage Size"
          },
          "AppVolumeMountPath": {
-           "default" : "Artifactory Cache Location"
+           "default" : "Artifactory Artifact-storage Location"
          },
          "ArtifactoryArtifactBucket": {
            "default" : "Artifact Bucket"
@@ -903,7 +903,7 @@
                 "      export ARTIFACTORY_BACKUPDIR=\"",
                        { "Ref": "BackupVolumeMountPath" },
                        "\"\n",
-                "      export ARTIFACTORY_CACHEDIR=\"",
+                "      export ARTIFACTORY_DATADIR=\"",
                        { "Ref": "AppVolumeMountPath" },
                        "\"\n",
                 "      export ARTIFACTORY_HOME=\"",
