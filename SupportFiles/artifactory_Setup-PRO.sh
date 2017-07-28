@@ -13,10 +13,11 @@ AFLICENSE="${ARTIFACTORY_LICENSE:-UNDEF}"
 AFLOGDIR="${ARTIFACTORY_LOGS:-UNDEF}"
 AFVARDIR="${ARTIFACTORY_VARS:-UNDEF}"
 AFTOMCATDIR="${ARTIFACTORY_TOMCAT_HOME:-UNDEF}"
+BINSTORXML="${ARTIFACTORY_HOME}/etc/binarystore.xml"
 CFNENDPOINT="${ARTIFACTORY_CFN_ENDPOINT:-UNDEF}"
 DBPROPERTIES="${AFETCDIR}/db.properties"
 FSBACKUPDIR="${ARTIFACTORY_BACKUPDIR:-UNDEF}"
-FSCACHEDIR="${ARTIFACTORY_CACHEDIR:-UNDEF}"
+FSDATADIR="${ARTIFACTORY_DATADIR:-UNDEF}"
 PGSQLJDBC=postgresql-jdbc
 PGSQLHOST="${ARTIFACTORY_DBHOST:-UNDEF}"
 PGSQLPORT="${ARTIFACTORY_DBPORT:-UNDEF}"
@@ -95,7 +96,7 @@ install -b -m 0640 -o artifactory -g artifactory /tmp/artifactory.lic \
   err_exit 'License file installation failed.'
 
 # Ensure that Artifactory's "extra" filesystems are properly-owned
-for FIXPERM in  "${FSBACKUPDIR}" "${FSCACHEDIR}"
+for FIXPERM in  "${FSBACKUPDIR}" "${FSDATADIR}"
 do
    printf "Setting ownership on %s..." "${FIXPERM}"
    chown artifactory:artifactory "${FIXPERM}" && echo "Success!" || \
@@ -160,6 +161,39 @@ then
       err_exit "Failed to set ownership on ${DBPROPERTIES}"
 else
    err_exit "Error creating new '${DBPROPERTIES}' file. Aborting."
+fi
+
+##
+## Make Artifactory use extra storage
+if [ ! "${FSDATADIR}" = "" ]
+then
+   ##
+   ## Preserve any existing binarystore.xml file
+   if [[ -f ${BINSTORXML} ]]
+   then
+     mv "${BINSTORXML}" "${BINSTORXML}.BAK-${DATE}" || \
+       err_exit "Unable to backup the \"${BINSTORXML}\" file! Aborting..."
+     SELSRC="${BINSTORXML}.BAK-${DATE}"
+   fi
+
+   ##
+   ## Bail if the offered binarystore.xml directory doesn't exist
+   if [[ ! -d $(dirname "${BINSTORXML}") ]]
+   then
+      err_exit "Aborting: no such directory '$(dirname ${BINSTORXML})'."
+   fi
+
+   ##
+   ## Create an S3-enabled binarystore.xml file with customized contents
+   cat << EOF > "${BINSTORXML}"
+<config version="1">
+    <chain template="file-system"/>
+    <provider id="file-system" type="file-system">
+        <baseDataDir>${FSDATADIR}</baseDataDir>
+    </provider>
+</config>
+EOF
+
 fi
 
 # Clean up /etc/rc.d/rc.local
