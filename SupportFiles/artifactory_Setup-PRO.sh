@@ -1,10 +1,15 @@
 #!/bin/bash
 # shellcheck disable=SC1091,SC2034,SC2015
+# set +x
 #
 # Script to install and configure the Artifactory software
 #
 #################################################################
-source /etc/cfn/AF.envs
+PROGNAME=$(basename "${0}")
+for AFENV in $(cat /etc/cfn/AF.envs)
+do
+   export "${AFENV}"
+done
 AFRPM="${ARTIFACTORY_RPM:-UNDEF}"
 S3BKUPDEST="${ARTIFACTORY_S3_BACKUPS:-UNDEF}"
 AFHOMEDIR="${ARTIFACTORY_HOME:-UNDEF}"
@@ -49,6 +54,7 @@ function err_exit {
 ##
 ## Prep for rebuild or setup rejoin as appropriate
 function RebuildStuff {
+   # This is a rebuild
    if [[ $(aws s3 ls s3://"${S3BKUPDEST}"/rebuild > /dev/null)$? -eq 0 ]]
    then
       echo "Found rebuild-file in s3://${S3BKUPDEST}/"
@@ -60,6 +66,7 @@ function RebuildStuff {
             "${AFHOMEDIR}"/access/{,etc/{,keys}}
       fi
 
+      # Pulling key-files
       for KEY in root.crt private.key
       do
          printf "Attempting to pull down %s... " "${KEY}"
@@ -68,11 +75,17 @@ function RebuildStuff {
               err_exit "Failed to pull down ${KEY}"
          chown artifactory:artifactory "${AFHOMEDIR}"/access/etc/keys/"${KEY}"
       done
+
+      # Syncing-down artifact-data from S3
+      printf "Fetching available Artifactory user data... "
+      aws s3 sync s3://"${S3BKUPDEST}"/data/ "${FSDATADIR}" 
+      chown -R artifactory:artifactory "${FSDATADIR}"
+   # This is a new build
    else
       touch /tmp/rebuild
       aws s3 cp /tmp/rebuild s3://"${S3BKUPDEST}"/ || \
         err_exit 'Failed to set rebuild flag. Reinstantiations of EC2 will not happen without intervention.'
-      export NOREBUILD=""
+      export NEWBUILD="true"
    fi
 }
 
@@ -80,6 +93,8 @@ function RebuildStuff {
 #######################
 ## Main Program Logic  
 #######################
+exec >> /var/log/"${PROGNAME}".log
+exec 2>&1
 
 # Install the Artifactory RPM
 echo "Attempt to install Artifactory RPM..."
@@ -114,8 +129,7 @@ else
       err_exit "Failed to install ${PGSQLJDBC}"
 fi
 
-if [[ $(stat "${AFTOMCATDIR}/lib/*jdbc.jar" \
-        > /dev/null 2>&1)$? -eq 0 ]]
+if [[ -f ${AFTOMCATDIR}/lib/postgresql-jdbc.jar ]]
 then
    echo "Found a PGSQL JDBC JAR in ${AFTOMCATDIR}/lib"
 else
@@ -212,10 +226,10 @@ systemctl start artifactory && echo "Success!" || \
 echo "Enable Artifactory service"
 systemctl enable artifactory
 
-# Prep S3 for future rebuilds
-if [[ ! -z ${NOREBUILD+xxx} ]]
+# Check a new-build flag 
+if [[ ! -z ${NEWBUILD+xxx} ]]
 then
-   echo "Push creds to S3 to support future rebuilds"
+   echo "New install: push creds to S3 to support future rebuilds"
    aws s3 sync "${AFHOMEDIR}"/access/etc/keys/ s3://"${S3BKUPDEST}"/creds/
 fi
 
