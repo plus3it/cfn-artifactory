@@ -6,10 +6,11 @@
 #
 #################################################################
 PROGNAME=$(basename "${0}")
-for AFENV in $(cat /etc/cfn/AF.envs)
+while read -r AFENV
 do
+   # shellcheck disable=SC2163
    export "${AFENV}"
-done
+done < /etc/cfn/AF.envs
 AFRPM="${ARTIFACTORY_RPM:-UNDEF}"
 S3BKUPDEST="${ARTIFACTORY_S3_BACKUPS:-UNDEF}"
 AFHOMEDIR="${ARTIFACTORY_HOME:-UNDEF}"
