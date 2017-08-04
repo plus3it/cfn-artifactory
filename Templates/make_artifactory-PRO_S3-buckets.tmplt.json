@@ -1,11 +1,30 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
+  "Conditions": {
+    "SetBucketName": {
+      "Fn::Not": [
+        {
+          "Fn::Equals": [
+            { "Ref": "BackupBucket" },
+            ""
+          ]
+        }
+      ]
+    }
+  },
   "Description": "This template sets up the Buckets used by Artifactory for S3-based storage",
   "Resources": {
     "Backups": {
       "Type": "AWS::S3::Bucket",
       "Properties": {
-        "AccessControl": "BucketOwnerFullControl"
+        "AccessControl": "BucketOwnerFullControl",
+        "BucketName": {
+          "Fn::If": [
+            "SetBucketName",
+            { "Ref" : "BackupBucket" },
+            { "Ref" : "AWS::NoValue" }
+          ]
+        }
       }
     }
   },
@@ -13,6 +32,17 @@
     "BackupBucket": {
       "Value": { "Ref": "Backups" },
       "Description": "Artifactory S3 backup bucket name."
+    },
+    "BackupBucketArn": {
+      "Value": { "Fn::GetAtt": [ "Backups", "Arn" ] },
+      "Description": "Artifactory S3 backup bucket ARN."
+    }
+  },
+  "Parameters": {
+    "BackupBucket": {
+      "Description": "S3 Bucket for longer-term retention of backups (optional).",
+      "Type": "String",
+      "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$"
     }
   }
 }
