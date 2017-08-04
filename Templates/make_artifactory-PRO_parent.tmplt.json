@@ -83,7 +83,6 @@
           },
           "Parameters": [
             "TargetVPC",
-            "CfnEndpointUrl",
             "EpelRepo",
             "PyStache",
             "PipRpm",
@@ -196,6 +195,11 @@
       "Description": "Name of the Artifactory installation-RPM.",
       "Type": "String"
     },
+    "BackupBucket": {
+      "Description": "S3 Bucket for longer-term retention of backups (optional).",
+      "Type": "String",
+      "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$"
+    },
     "BackupVolumeDevice": {
       "AllowedValues": [
         "",
@@ -238,12 +242,6 @@
     "BucketTemplateUri": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Description": "URI for the template that creates Artifactory's S3 buckets.",
-      "Type": "String"
-    },
-    "CfnEndpointUrl": {
-      "AllowedPattern": "^$|^http://.*$|^https://.*$",
-      "Default": "",
-      "Description": "URL to the CloudFormation Endpoint. e.g. https://cloudformation.us-east-1.amazonaws.com",
       "Type": "String"
     },
     "DbAdminName": {
@@ -427,6 +425,15 @@
       "Description": "URI for the template that creates Artifactory's RDS-hoste PGSQL DB.",
       "Type": "String"
     },
+    "RolePrefix": {
+      "Description": "Prefix to apply to IAM role to make things a bit prettier (optional).",
+      "Type": "String"
+    },
+    "ServiceTld": {
+      "Default": "amazonaws.com",
+      "Description": "TLD of the IAMable service-name.",
+      "Type": "String"
+    },
     "SgTemplateUri": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Description": "URI for the template that creates Artifactory's SGs.",
@@ -473,7 +480,16 @@
           "BackupVolumeMountPath": { "Ref": "BackupVolumeMountPath" },
           "BackupVolumeSize": { "Ref": "BackupVolumeSize" },
           "BackupVolumeType": { "Ref": "BackupVolumeType" },
-          "CfnEndpointUrl": { "Ref": "CfnEndpointUrl" },
+          "CfnEndpointUrl": {
+            "Fn::Join": [
+              ".",
+              [
+                "https://cloudformation",
+                { "Ref": "AWS::Region" },
+                { "Ref": "ServiceTld" }
+              ]
+            ]
+          },
           "Domainname": { "Ref": "Domainname" },
           "EpelRepo": { "Ref": "EpelRepo" },
           "Hostname": { "Ref": "Hostname" },
@@ -516,9 +532,10 @@
       "DependsOn": "S3Res",
       "Properties": {
         "Parameters": {
-          "BackupBucket": {
-            "Fn::GetAtt": [ "S3Res", "Outputs.BackupBucket" ]
-          }
+          "BackupBucketArn": {
+            "Fn::GetAtt": [ "S3Res", "Outputs.BackupBucketArn" ]
+          },
+          "RolePrefix": { "Ref": "RolePrefix" }
         },
         "TemplateURL": { "Ref": "IamTemplateUri" },
         "TimeoutInMinutes": "10"
@@ -553,6 +570,9 @@
     },
     "S3Res": {
       "Properties": {
+        "Parameters": {
+          "BackupBucket": { "Ref": "BackupBucket" }
+        },
         "TemplateURL": { "Ref": "BucketTemplateUri" },
         "TimeoutInMinutes": "10"
       },
