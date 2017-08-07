@@ -97,7 +97,6 @@
         "Ec2TemplateUri": {
           "default": "Instance Template"
         },
-
         "IamTemplateUri": {
           "default": "IAM Template"
         },
@@ -196,9 +195,9 @@
       "Type": "String"
     },
     "BackupBucket": {
+      "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$",
       "Description": "S3 Bucket for longer-term retention of backups (optional).",
-      "Type": "String",
-      "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$"
+      "Type": "String"
     },
     "BackupVolumeDevice": {
       "AllowedValues": [
@@ -287,9 +286,9 @@
       "Description": "NodeName of the Artifactory database.",
       "Type": "String"
     },
-    "DbSubnets" : {
-      "Type" : "List<AWS::EC2::Subnet::Id>",
-      "Description" : "Select at least two subnets, each in different Availability Zones"
+    "DbSubnets": {
+      "Description": "Select at least two subnets, each in different Availability Zones",
+      "Type": "List<AWS::EC2::Subnet::Id>"
     },
     "Domainname": {
       "ConstraintDescription": "An alphanumeric string to complete the domain portion of the instance's FQDN.",
@@ -460,9 +459,7 @@
           "AppVolumeMountPath": { "Ref": "AppVolumeMountPath" },
           "AppVolumeSize": { "Ref": "AppVolumeSize" },
           "AppVolumeType": { "Ref": "AppVolumeType" },
-          "ArtifactoryAppInstallScriptUrl": {
-            "Ref": "ArtifactoryAppInstallScriptUrl"
-          },
+          "ArtifactoryAppInstallScriptUrl": { "Ref": "ArtifactoryAppInstallScriptUrl" },
           "ArtifactoryDbAdmin": { "Ref": "DbAdminName" },
           "ArtifactoryDbHost": {
             "Fn::GetAtt": [ "RdsRes", "Outputs.RdsEndpointAddress" ]
@@ -471,10 +468,8 @@
           "ArtifactoryDbPassword": { "Ref": "DbAdminPass" },
           "ArtifactoryDbPort": { "Ref": "ArtifactoryDbPort" },
           "ArtifactoryHome": { "Ref": "ArtifactoryHome" },
-          "ArtifactoryLicenseUrl": { "Ref": "ArtifactoryLicenseUrl"},
-          "ArtifactoryOsPrepScriptUrl": {
-            "Ref": "ArtifactoryOsPrepScriptUrl"
-          },
+          "ArtifactoryLicenseUrl": { "Ref": "ArtifactoryLicenseUrl" },
+          "ArtifactoryOsPrepScriptUrl": { "Ref": "ArtifactoryOsPrepScriptUrl" },
           "ArtifactoryRpm": { "Ref": "ArtifactoryRpm" },
           "BackupVolumeDevice": { "Ref": "BackupVolumeDevice" },
           "BackupVolumeMountPath": { "Ref": "BackupVolumeMountPath" },
@@ -490,6 +485,9 @@
               ]
             ]
           },
+          "DbIsMultiAz": "true",
+          "DbStorageIops": "1000",
+          "DbStorageType": "gp2",
           "Domainname": { "Ref": "Domainname" },
           "EpelRepo": { "Ref": "EpelRepo" },
           "Hostname": { "Ref": "Hostname" },

@@ -1,6 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Conditions": {
+    "SetIops": { "Fn::Equals": [ { "Ref": "DbStorageType" }, "io1" ] },
     "SetNodeName": {
       "Fn::Not": [
         {
@@ -28,12 +29,21 @@
       "Type": "String"
     },
     "DbDataSize": {
-      "ConstraintDescription": "Must be between 5GB and 16384GB.",
+      "ConstraintDescription": "Must be between 5GB and 6144GB.",
       "Default": "5",
       "Description": "Size in GiB of the RDS table-space to create.",
-      "MaxValue": "16384",
+      "MaxValue": "6144",
       "MinValue": "5",
       "Type": "Number"
+    },
+    "DbIsMultiAz": {
+      "AllowedValues": [
+        "false",
+        "true"
+      ],
+      "Default": "false",
+      "Description": "Select whether to create a multi-AZ RDS deployment.",
+      "Type": "String"
     },
     "DbNodeName": {
       "Description": "NodeName of the Artifactory database.",
@@ -66,19 +76,38 @@
       "Description": "List of security groups to apply to the RDS database.",
       "Type": "List<AWS::EC2::SecurityGroup::Id>"
     },
+    "DbStorageType" : {
+      "AllowedValues": [
+        "standard",
+        "gp2",
+        "io1"
+      ],
+      "Default": "gp2",
+      "Description": "Type of storage used to host DB-data.",
+      "Type": "String"
+    },
+    "DbStorageIops" : {
+      "Default": "1000",
+      "Description": "Provisioned-IOPS of storage to used to host DB-data.",
+      "MaxValue": "30000",
+      "MinValue": "1000",
+      "Type": "Number"
+    },
     "DbSubnets" : {
       "Type" : "List<AWS::EC2::Subnet::Id>",
       "Description" : "Select at least two subnets, each in different Availability Zones"
     },
     "PgsqlVersion": {
       "AllowedValues": [
+        "9.6.3",
         "9.6.2",
         "9.6.1",
+        "9.5.7",
         "9.5.6",
         "9.5.4",
         "9.5.2"
       ],
-      "Default": "9.6.2",
+      "Default": "9.6.3",
       "Description": "The X.Y.Z version of the PostGreSQL database to deploy.",
       "Type": "String"
     },
@@ -110,8 +139,17 @@
         "EngineVersion": { "Ref": "PgsqlVersion" },
         "MasterUsername": { "Ref": "DbAdminName" },
         "MasterUserPassword": { "Ref": "DbAdminPass" },
+        "MultiAZ": { "Ref": "DbIsMultiAz" },
         "PreferredBackupWindow": "23:30-00:00",
         "PreferredMaintenanceWindow": "sun:00:30-sun:01:00",
+        "StorageType": { "Ref": "DbStorageType" },
+        "Iops": {
+          "Fn::If": [
+            "SetIops",
+            { "Ref": "DbStorageIops" },
+            { "Ref": "AWS::NoValue" }
+          ]
+        },
         "PubliclyAccessible": "false",
         "VPCSecurityGroups": { "Ref": "DbSecurityGroup" }
       },
