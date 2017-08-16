@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC1091,SC2034,SC2015
+# shellcheck disable=SC1091,SC2034,SC2015,SC2046,SC2155
 # set +x
 #
 # Script to install and configure the Artifactory software
@@ -19,11 +19,14 @@ AFLICENSE="${ARTIFACTORY_LICENSE:-UNDEF}"
 AFLOGDIR="${ARTIFACTORY_LOGS:-UNDEF}"
 AFVARDIR="${ARTIFACTORY_VARS:-UNDEF}"
 AFTOMCATDIR="${ARTIFACTORY_TOMCAT_HOME:-UNDEF}"
+AFPROXFQDN="${ARTIFACTORY_PROXY_HOST}"
+AFPROXTMPLT="${ARTIFACTORY_PROXY_TEMPLATE}"
 BINSTORXML="${ARTIFACTORY_HOME}/etc/binarystore.xml"
 CFNENDPOINT="${ARTIFACTORY_CFN_ENDPOINT:-UNDEF}"
 DBPROPERTIES="${AFETCDIR}/db.properties"
 FSBACKUPDIR="${ARTIFACTORY_BACKUPDIR:-UNDEF}"
 FSDATADIR="${ARTIFACTORY_DATADIR:-UNDEF}"
+NGINXRPM="nginx"
 PGSQLJDBC=postgresql-jdbc
 PGSQLHOST="${ARTIFACTORY_DBHOST:-UNDEF}"
 PGSQLPORT="${ARTIFACTORY_DBPORT:-UNDEF}"
@@ -50,6 +53,40 @@ function err_exit {
    else
       exit 1
    fi
+}
+
+##
+## Install and configure Nginx-based reverse-proxy
+function ReverseProxy {
+
+   # Install Nginx
+   printf "Install Nginx service... "
+   yum --enablerepo="*epel" install -y "${NGINXRPM}" && \
+     echo "Success." || \
+     err_exit 'Nginx installation failed'
+   local NGINXDIR=$(
+         dirname $(rpm -ql "${NGINXRPM}" | grep -E 'nginx.conf$')
+      )
+
+   # Create the proxy config in the Nginx config-dir
+   if [[ -d ${NGINXDIR}/conf.d ]]
+   then
+      printf "Configuring reverse-proxy... "
+      curl -skL "${AFPROXTMPLT}" | \
+        sed 's/__AF-FQDN__/'"${AFPROXFQDN}"'/g' > \
+          "${NGINXDIR}"/conf.d/AFproxy.conf && \
+            echo "Success" || \
+            err_exit 'Failed to create reverse-proxy config'
+      chcon --reference="${NGINXDIR}"/nginx.conf \
+        "${NGINXDIR}"/conf.d/AFproxy.conf
+   fi
+
+   # Set suitable SELinux Policy
+   setsebool -P httpd_can_network_connect 1
+
+   # Enable and start Nginx
+   systemctl enable nginx
+   systemctl start nginx
 }
 
 ##
@@ -226,6 +263,9 @@ systemctl start artifactory && echo "Success!" || \
   err_exit 'Failed to start Artifactory service'
 echo "Enable Artifactory service"
 systemctl enable artifactory
+
+# Add a reverse-proxy
+ReverseProxy
 
 # Check a new-build flag 
 if [[ ! -z ${NEWBUILD+xxx} ]]

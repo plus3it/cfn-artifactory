@@ -414,6 +414,15 @@
       "Description": "Default login user account name.",
       "Type": "String"
     },
+    "ProxyHostname":{
+      "Description": "FQDN used by remote clients to attach to the Artifactory service.",
+      "Type": "String"
+    },
+    "ProxyTemplateUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to the Artifactory reverse-proxy configuration template-file.",
+      "Type": "String"
+    },
     "PyStache": {
       "Default": "pystache",
       "Description": "Name of preferred pystache RPM.",
@@ -485,9 +494,6 @@
               ]
             ]
           },
-          "DbIsMultiAz": "true",
-          "DbStorageIops": "1000",
-          "DbStorageType": "gp2",
           "Domainname": { "Ref": "Domainname" },
           "EpelRepo": { "Ref": "EpelRepo" },
           "Hostname": { "Ref": "Hostname" },
@@ -506,6 +512,8 @@
           "PipIndexFips": { "Ref": "PipIndexFips" },
           "PipRpm": { "Ref": "PipRpm" },
           "ProvisionUser": { "Ref": "ProvisionUser" },
+          "ProxyHostname": { "Ref": "ProxyHostname" },
+          "ProxyTemplateUrl": { "Ref": "ProxyTemplateUrl" },
           "PyStache": { "Ref": "PyStache" },
           "S3BackupBucket": {
             "Fn::GetAtt": [ "S3Res", "Outputs.BackupBucket" ]
@@ -549,10 +557,13 @@
           "DbDataSize": { "Ref": "DbDataSize" },
           "DbInstanceName": { "Ref": "DbInstanceName" },
           "DbInstanceType": { "Ref": "DbInstanceType" },
+          "DbIsMultiAz": "true",
           "DbNodeName": { "Ref": "DbNodeName" },
           "DbSecurityGroup": {
             "Fn::GetAtt": [ "SgRes", "Outputs.RdsSg" ]
           },
+          "DbStorageIops": "1000",
+          "DbStorageType": "gp2",
           "DbSubnets": {
             "Fn::Join": [
               ",",

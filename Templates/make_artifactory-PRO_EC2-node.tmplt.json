@@ -519,6 +519,15 @@
       "Description": "Default login user account name.",
       "Type": "String"
     },
+    "ProxyHostname":{
+      "Description": "FQDN used by remote clients to attach to the Artifactory service.",
+      "Type": "String"
+    },
+    "ProxyTemplateUrl": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URL to the Artifactory reverse-proxy configuration template-file.",
+      "Type": "String"
+    },
     "PyStache": {
       "Default": "pystache",
       "Description": "Name of preferred pystache RPM.",
@@ -931,6 +940,12 @@
                 "      export ARTIFACTORY_S3_BACKUPS=\"",
                        { "Ref": "S3BackupBucket" },
                        "\"\n",
+                "      export ARTIFACTORY_PROXY_HOST=\"",
+                       { "Ref": "ProxyHostname" },
+                       "\"\n",
+                "      export ARTIFACTORY_PROXY_TEMPLATE=\"",
+                       { "Ref": "ProxyTemplateUrl" },
+                       "\"\n",
                 "      \n",
                 "      # For tiered-storage Setup\n",
                 "      export ARTIFACTORY_ROLE=\"",
@@ -1004,10 +1019,15 @@
                 "      # Ensure PostGreSQL RPMs are installed\n",
                 "      yum install -y postgresql postgresql-jdbc\n",
                 "      \n",
+                "      # Get reverse-proxy template file\n",
+                "      curl -skL ",
+                       { "Ref": "ProxyTemplateUrl" },
+                       " -o /root/reverse-proxy.conf-tmplt\n",
+                "      \n",
                 "      # Run OS-prep script\n",
                 "      curl -skL ",
                        { "Ref": "ArtifactoryOsPrepScriptUrl" },
-                       " -o  /root/OSprep.sh\n",
+                       " -o /root/OSprep.sh\n",
                 "      bash /root/OSprep.sh || err_exit",
                        " 'OS-prep script exited abnormally.'\n",
                 "\n"
