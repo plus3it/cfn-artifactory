@@ -87,7 +87,7 @@ function ReverseProxy {
       printf "Localizing proxy-config... "
       sed -i '{
          s/__AF-FQDN__/'"${AFPROXFQDN}"'/g
-         /^[ 	]*server_name/s/;$/'"${SVCALIASES[*]}"';/
+         /^[ 	]*server_name/s/;$/ '"${SVCALIASES[*]}"';/
       }' "${PROXCONF}" && \
          echo "Success" || \
          err_exit 'Failed to localize reverse-proxy config'
