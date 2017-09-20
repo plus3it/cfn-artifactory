@@ -3,74 +3,37 @@
   "Conditions": {
     "AssignInstanceRole": {
       "Fn::Not": [
-        {
-          "Fn::Equals": [
-            {
-              "Ref": "InstanceProfile"
-            },
-            ""
-          ]
-        }
+        { "Fn::Equals": [ { "Ref": "InstanceProfile" }, "" ] }
       ]
     },
     "AssignPublicIp": {
       "Fn::Not": [
-        {
-          "Fn::Equals": [
-            {
-              "Ref": "NoPublicIp"
-            },
-            "true"
-          ]
-        }
+        { "Fn::Equals": [ { "Ref": "NoPublicIp" }, "true" ] }
       ]
     },
     "CreateAppVolume": {
       "Fn::Not": [
-        {
-          "Fn::Equals": [
-            {
-              "Ref": "AppVolumeDevice"
-            },
-            ""
-          ]
-        }
+        { "Fn::Equals": [ { "Ref": "AppVolumeDevice" }, "" ] }
       ]
     },
     "CreateBackupVolume": {
       "Fn::Not": [
-        {
-          "Fn::Equals": [
-            {
-              "Ref": "BackupVolumeDevice"
-            },
-            ""
-          ]
-        }
+        { "Fn::Equals": [ { "Ref": "BackupVolumeDevice" }, "" ] }
+      ]
+    },
+    "HaveAkas": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "AkaList" }, "" ] }
       ]
     },
     "Reboot": {
       "Fn::Not": [
-        {
-          "Fn::Equals": [
-            {
-              "Ref": "NoReboot"
-            },
-            "true"
-          ]
-        }
+        { "Fn::Equals": [ { "Ref": "NoReboot" }, "true" ] }
       ]
     },
     "UseCfnUrl": {
       "Fn::Not": [
-        {
-          "Fn::Equals": [
-            {
-              "Ref": "CfnEndpointUrl"
-            },
-            ""
-          ]
-        }
+        { "Fn::Equals": [ { "Ref": "CfnEndpointUrl" }, "" ] }
       ]
     }
   },
@@ -259,10 +222,23 @@
       }
     }
   },
+  "Outputs": {
+    "ArtifactoryInstanceId": {
+      "Description": "Instance ID",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-InstanceId" }
+      },
+      "Value": { "Ref": "ArtifactoryEC2" }
+    }
+  },
   "Parameters": {
     "AdminPubkeyURL": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Description": "URL the file containing the admin users' SSH public keys.",
+      "Type": "String"
+    },
+    "AkaList": {
+      "Description": "Comma-delimited list of FQDNs that service should also accept as valid names to service requests on behalf of.",
       "Type": "String"
     },
     "AmiId": {
@@ -565,14 +541,10 @@
                     [
                       "[main]\n",
                       "stack=",
-                      {
-                        "Ref": "AWS::StackId"
-                      },
+                      { "Ref": "AWS::StackId" },
                       "\n",
                       "region=",
-                      {
-                        "Ref": "AWS::Region"
-                      },
+                      { "Ref": "AWS::Region" },
                       "\n",
                       {
                         "Fn::If": [
@@ -582,9 +554,7 @@
                               "",
                               [
                                 "role=",
-                                {
-                                  "Ref": "InstanceProfile"
-                                },
+                                { "Ref": "InstanceProfile" },
                                 "\n"
                               ]
                             ]
@@ -600,9 +570,7 @@
                               "",
                               [
                                 "url=",
-                                {
-                                  "Ref": "CfnEndpointUrl"
-                                },
+                                { "Ref": "CfnEndpointUrl" },
                                 "\n"
                               ]
                             ]
@@ -627,9 +595,7 @@
                       "path=Resources.CfnLaunchConfig.Metadata\n",
                       "action=/opt/aws/bin/cfn-init -v -c update",
                       " --stack ",
-                      {
-                        "Ref": "AWS::StackName"
-                      },
+                      { "Ref": "AWS::StackName" },
                       " --resource ArtifactoryEC2",
                       {
                         "Fn::If": [
@@ -639,9 +605,7 @@
                               "",
                               [
                                 " --role ",
-                                {
-                                  "Ref": "InstanceProfile"
-                                }
+                                { "Ref": "InstanceProfile" }
                               ]
                             ]
                           },
@@ -656,9 +620,7 @@
                               "",
                               [
                                 " --url ",
-                                {
-                                  "Ref": "CfnEndpointUrl"
-                                }
+                                { "Ref": "CfnEndpointUrl" }
                               ]
                             ]
                           },
@@ -709,67 +671,41 @@
             "Fn::If": [
               "CreateAppVolume",
               {
-                "DeviceName": {
-                  "Ref": "AppVolumeDevice"
-                },
+                "DeviceName": { "Ref": "AppVolumeDevice" },
                 "Ebs": {
                   "DeleteOnTermination": "true",
-                  "VolumeSize": {
-                    "Ref": "AppVolumeSize"
-                  },
-                  "VolumeType": {
-                    "Ref": "AppVolumeType"
-                  }
+                  "VolumeSize": { "Ref": "AppVolumeSize" },
+                  "VolumeType": { "Ref": "AppVolumeType" }
                 }
               },
-              {
-                "Ref": "AWS::NoValue"
-              }
+              { "Ref": "AWS::NoValue" }
             ]
           },
           {
             "Fn::If": [
               "CreateBackupVolume",
               {
-                "DeviceName": {
-                  "Ref": "BackupVolumeDevice"
-                },
+                "DeviceName": { "Ref": "BackupVolumeDevice" },
                 "Ebs": {
                   "DeleteOnTermination": "true",
-                  "VolumeSize": {
-                    "Ref": "BackupVolumeSize"
-                  },
-                  "VolumeType": {
-                    "Ref": "BackupVolumeType"
-                  }
+                  "VolumeSize": { "Ref": "BackupVolumeSize" },
+                  "VolumeType": { "Ref": "BackupVolumeType" }
                 }
               },
-              {
-                "Ref": "AWS::NoValue"
-              }
+              { "Ref": "AWS::NoValue" }
             ]
           }
         ],
         "IamInstanceProfile": {
           "Fn::If": [
             "AssignInstanceRole",
-            {
-              "Ref": "InstanceProfile"
-            },
-            {
-              "Ref": "AWS::NoValue"
-            }
+            { "Ref": "InstanceProfile" },
+            { "Ref": "AWS::NoValue" }
           ]
         },
-        "ImageId": {
-          "Ref": "AmiId"
-        },
-        "InstanceType": {
-          "Ref": "InstanceType"
-        },
-        "KeyName": {
-          "Ref": "KeyPairName"
-        },
+        "ImageId": { "Ref": "AmiId" },
+        "InstanceType": { "Ref": "InstanceType" },
+        "KeyName": { "Ref": "KeyPairName" },
         "NetworkInterfaces": [
           {
             "AssociatePublicIpAddress": {
@@ -780,12 +716,8 @@
               ]
             },
             "DeviceIndex": "0",
-            "GroupSet": {
-              "Ref": "SecurityGroupIds"
-            },
-            "SubnetId": {
-              "Ref": "SubnetIds"
-            }
+            "GroupSet": { "Ref": "SecurityGroupIds" },
+            "SubnetId": { "Ref": "SubnetIds" }
           }
         ],
         "Tags": [
@@ -795,9 +727,7 @@
               "Fn::Join": [
                 "",
                 [
-                  {
-                    "Ref": "AWS::StackName"
-                  }
+                  { "Ref": "AWS::StackName" }
                 ]
               ]
             }
@@ -813,37 +743,25 @@
                 "system_info:\n",
                 "  default_user:\n",
                 "    name: ",
-                {
-                  "Ref": "ProvisionUser"
-                },
+                { "Ref": "ProvisionUser" },
                 "\n",
                 "\n",
                 "hostname: ",
-                {
-                  "Ref": "Hostname"
-                },
+                { "Ref": "Hostname" },
                 "\n",
                 "fqdn: ",
-                {
-                  "Ref": "Hostname"
-                },
+                { "Ref": "Hostname" },
                 ".",
-                {
-                  "Ref": "Domainname"
-                },
+                { "Ref": "Domainname" },
                 "\n",
                 "manage_etc_hosts: true\n",
                 "\n",
                 "yum_repos:\n",
                 "  ",
-                {
-                  "Ref": "JfrogRepositoryName"
-                },
+                { "Ref": "JfrogRepositoryName" },
                 ":\n",
                 "    baseurl: ",
-                {
-                  "Ref": "JfrogRepositoryUrl"
-                },
+                { "Ref": "JfrogRepositoryUrl" },
                 "\n",
                 "    enabled: true\n",
                 "    gpgcheck: false\n",
@@ -851,40 +769,28 @@
                 "\n",
                 "bootcmd:\n",
                 "  - cloud-init-per instance mkfs-appvolume mkfs -t ext4 ",
-                {
-                  "Ref": "AppVolumeDevice"
-                },
+                { "Ref": "AppVolumeDevice" },
                 "\n",
                 "  - cloud-init-per instance mkfs-bkupvolume mkfs -t ext4 ",
-                {
-                  "Ref": "BackupVolumeDevice"
-                },
+                { "Ref": "BackupVolumeDevice" },
                 "\n",
                 "\n",
                 "mounts:\n",
                 "  - [ ",
                 "\"",
-                {
-                  "Ref": "AppVolumeDevice"
-                },
+                { "Ref": "AppVolumeDevice" },
                 "\", ",
                 "\"",
-                {
-                  "Ref": "AppVolumeMountPath"
-                },
+                { "Ref": "AppVolumeMountPath" },
                 "\", ",
                 "\"auto\" ",
                 "]\n",
                 "  - [ ",
                 "\"",
-                {
-                  "Ref": "BackupVolumeDevice"
-                },
+                { "Ref": "BackupVolumeDevice" },
                 "\", ",
                 "\"",
-                {
-                  "Ref": "BackupVolumeMountPath"
-                },
+                { "Ref": "BackupVolumeMountPath" },
                 "\", ",
                 "\"auto\" ",
                 "]\n",
@@ -945,6 +851,9 @@
                        "\"\n",
                 "      export ARTIFACTORY_PROXY_TEMPLATE=\"",
                        { "Ref": "ProxyTemplateUrl" },
+                       "\"\n",
+                "      export ARTIFACTORY_PROXY_AKAS=\"",
+                       { "Ref": "AkaList" },
                        "\"\n",
                 "      \n",
                 "      # For tiered-storage Setup\n",

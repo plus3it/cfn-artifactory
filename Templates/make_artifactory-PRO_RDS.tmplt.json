@@ -15,8 +15,11 @@
   "Metadata": {},
   "Outputs": {
     "RdsEndpointAddress": {
-      "Value": { "Fn::GetAtt" : [ "RDSdb", "Endpoint.Address" ] },
-      "Description": "RDS DB's endpoint FQDN."
+      "Description": "RDS DB's endpoint FQDN.",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-RdsEndpointAddress" }
+      },
+      "Value": { "Fn::GetAtt" : [ "RDSdb", "Endpoint.Address" ] }
     }
   },
   "Parameters": {

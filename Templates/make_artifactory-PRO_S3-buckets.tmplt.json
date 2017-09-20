@@ -30,12 +30,18 @@
   },
   "Outputs": {
     "BackupBucket": {
-      "Value": { "Ref": "Backups" },
-      "Description": "Artifactory S3 backup bucket name."
+      "Description": "Artifactory S3 backup bucket name.",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-BackupBucket" }
+      },
+      "Value": { "Ref": "Backups" }
     },
     "BackupBucketArn": {
-      "Value": { "Fn::GetAtt": [ "Backups", "Arn" ] },
-      "Description": "Artifactory S3 backup bucket ARN."
+      "Description": "Artifactory S3 backup bucket ARN.",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-BackupBucketArn" }
+      },
+      "Value": { "Fn::GetAtt": [ "Backups", "Arn" ] }
     }
   },
   "Parameters": {

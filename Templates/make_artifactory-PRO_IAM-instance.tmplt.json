@@ -11,14 +11,23 @@
   "Outputs": {
     "InstanceRole": {
       "Description": "Name of the instance role",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-InstanceRole" }
+      },
       "Value": { "Ref": "InstanceRole" }
     },
     "InstanceRoleArn": {
       "Description": "ARN of the instance role",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-InstanceRoleArn" }
+      },
       "Value": { "Fn::GetAtt": [ "InstanceRole", "Arn" ] }
     },
     "InstanceRoleProfile": {
       "Description": "Profile of the instance role",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-InstanceRoleProfile" }
+      },
       "Value": { "Ref": "InstanceProfile" }
     }
   },

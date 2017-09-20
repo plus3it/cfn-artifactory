@@ -28,6 +28,8 @@
             "AdminPubkeyURL",
             "Hostname",
             "Domainname",
+            "ProxyHostname",
+            "AkaList",
             "SubnetIds",
             "NoPublicIp",
             "NoReboot"
@@ -40,6 +42,7 @@
           "Parameters": [
             "ArtifactoryOsPrepScriptUrl",
             "ArtifactoryAppInstallScriptUrl",
+            "ProxyTemplateUrl",
             "ArtifactoryLicenseUrl",
             "JfrogRepositoryName",
             "JfrogRepositoryUrl",
@@ -82,7 +85,11 @@
             "default": "Miscellaneous Parameters"
           },
           "Parameters": [
+            "ServiceTld",
+            "RolePrefix",
+            "BackupBucket",
             "TargetVPC",
+            "DbSubnets",
             "EpelRepo",
             "PyStache",
             "PipRpm",
@@ -100,6 +107,9 @@
         "IamTemplateUri": {
           "default": "IAM Template"
         },
+        "ProxyTemplateUrl": {
+          "default": "Nginx-Proxy Config-template Url"
+        },
         "RdsTemplateUri": {
           "default": "Database Template"
         },
@@ -109,11 +119,65 @@
       }
     }
   },
-  "Outputs": {},
+  "Outputs": {
+    "ArtifactoryBackupBucket": {
+      "Description": "Artifactory S3 backup bucket name.",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-BackupBucket" }
+      },
+      "Value": { "Fn::GetAtt": [ "S3Res", "Outputs.BackupBucket" ] }
+    },
+    "ArtifactoryBackupBucketArn": {
+      "Description": "Artifactory S3 backup bucket ARN.",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-BackupBucketArn" }
+      },
+      "Value": { "Fn::GetAtt": [ "S3Res", "Outputs.BackupBucketArn" ] }
+    },
+    "ArtifactoryIamProfile": {
+      "Description": "Artifactory IAM Profile",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-IamProfile" }
+      },
+      "Value": { "Fn::GetAtt": [ "IamRes", "Outputs.InstanceRoleProfile" ] }
+    },
+    "ArtifactoryIamRole": {
+      "Description": "Artifactory IAM Role",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-IamRole" }
+      },
+      "Value": { "Fn::GetAtt": [ "IamRes", "Outputs.InstanceRole" ] }
+    },
+    "ArtifactoryIamRoleArn": {
+      "Description": "Artifactory IAM Role-ARN",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-IamRoleArn" }
+      },
+      "Value": { "Fn::GetAtt": [ "IamRes", "Outputs.InstanceRoleArn" ] }
+    },
+    "ArtifactoryInstanceId": {
+      "Description": "Instance ID",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-InstanceId" }
+      },
+      "Value": { "Fn::GetAtt": [ "Ec2Res", "Outputs.ArtifactoryInstanceId" ] }
+    },
+    "ArtifactoryRdsEndpoint": {
+      "Description": "RDS DB's endtpoint FQDN.",
+      "Export": {
+        "Name" : { "Fn::Sub": "${AWS::StackName}-RdsEndpointFqdn" }
+      },
+      "Value": { "Fn::GetAtt": [ "RdsRes", "Outputs.RdsEndpointAddress" ] }
+    }
+  },
   "Parameters": {
     "AdminPubkeyURL": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Description": "URL the file containing the admin users' SSH public keys.",
+      "Type": "String"
+    },
+    "AkaList": {
+      "Description": "A comma-delimited list of FQDNs that service should also accept as valid names to service requests on behalf of.",
       "Type": "String"
     },
     "AmiId": {
@@ -386,13 +450,15 @@
     },
     "PgsqlVersion": {
       "AllowedValues": [
+        "9.6.3",
         "9.6.2",
         "9.6.1",
+        "9.5.7",
         "9.5.6",
         "9.5.4",
         "9.5.2"
       ],
-      "Default": "9.6.2",
+      "Default": "9.6.3",
       "Description": "The X.Y.Z version of the PostGreSQL database to deploy.",
       "Type": "String"
     },
@@ -463,6 +529,7 @@
       "Properties": {
         "Parameters": {
           "AdminPubkeyURL": { "Ref": "AdminPubkeyURL" },
+          "AkaList": { "Ref": "AkaList" },
           "AmiId": { "Ref": "AmiId" },
           "AppVolumeDevice": { "Ref": "AppVolumeDevice" },
           "AppVolumeMountPath": { "Ref": "AppVolumeMountPath" },

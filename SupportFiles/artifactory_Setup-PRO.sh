@@ -35,6 +35,7 @@ PGSQLUSER="${ARTIFACTORY_DBUSER:-UNDEF}"
 PGSQLPASS="${ARTIFACTORY_DBPASS:-UNDEF}"
 SELSRC=${ARTIFACTORY_ETC}/mimetypes.xml
 STACKNAME="${ARTIFACTORY_CFN_STACKNAME:-UNDEF}"
+SVCALIASES=(${ARTIFACTORY_PROXY_AKAS//,/ })
 
 ##
 ## Set up an error logging and exit-state
@@ -58,7 +59,6 @@ function err_exit {
 ##
 ## Install and configure Nginx-based reverse-proxy
 function ReverseProxy {
-
    # Install Nginx
    printf "Install Nginx service... "
    yum --enablerepo="*epel" install -y "${NGINXRPM}" && \
@@ -68,17 +68,40 @@ function ReverseProxy {
          dirname $(rpm -ql "${NGINXRPM}" | grep -E 'nginx.conf$')
       )
 
+   local PROXCONF="${NGINXDIR}/conf.d/AFproxy.conf"
+
    # Create the proxy config in the Nginx config-dir
    if [[ -d ${NGINXDIR}/conf.d ]]
    then
-      printf "Configuring reverse-proxy... "
-      curl -skL "${AFPROXTMPLT}" | \
-        sed 's/__AF-FQDN__/'"${AFPROXFQDN}"'/g' > \
-          "${NGINXDIR}"/conf.d/AFproxy.conf && \
-            echo "Success" || \
-            err_exit 'Failed to create reverse-proxy config'
-      chcon --reference="${NGINXDIR}"/nginx.conf \
-        "${NGINXDIR}"/conf.d/AFproxy.conf
+      printf "Grabbing reverse-proxy template-source... "
+      install -b -m 000600 /dev/null "${PROXCONF}"
+      curl -skL "${AFPROXTMPLT}" -o "${PROXCONF}" && \
+         echo "Success" || \
+         err_exit 'Failed to create reverse-proxy config'
+
+      if [[ $(getenforce) != "Disabled" ]]
+      then
+         chcon --reference="${NGINXDIR}"/nginx.conf "${PROXCONF}"
+      fi
+
+      printf "Localizing proxy-config... "
+      sed -i '{
+         s/__AF-FQDN__/'"${AFPROXFQDN}"'/g
+         /^[ 	]*server_name/s/;$/'"${SVCALIASES[*]}"';/
+      }' "${PROXCONF}" && \
+         echo "Success" || \
+         err_exit 'Failed to localize reverse-proxy config'
+   fi
+
+   CURBUCKTHASH=$(nginx -T 2>&1 | grep 'server_names_hash_bucket_size' | \
+                  sed 's/^.*: //')
+
+   # Adjust 
+   if [[ ! -z ${CURBUCKTHASH+xxx} ]] 
+   then
+      NEWHASH=$((CURBUCKTHASH * 2))
+      sed -i '/^http /a server_names_hash_bucket_size '"${NEWHASH}"';' \
+        "${NGINXDIR}"/nginx.conf
    fi
 
    # Set suitable SELinux Policy
@@ -118,6 +141,7 @@ function RebuildStuff {
       printf "Fetching available Artifactory user data... "
       aws s3 sync s3://"${S3BKUPDEST}"/data/ "${FSDATADIR}" 
       chown -R artifactory:artifactory "${FSDATADIR}"
+      echo
    # This is a new build
    else
       touch /tmp/rebuild
