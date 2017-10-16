@@ -36,6 +36,7 @@ PGSQLPASS="${ARTIFACTORY_DBPASS:-UNDEF}"
 SELSRC=${ARTIFACTORY_ETC}/mimetypes.xml
 STACKNAME="${ARTIFACTORY_CFN_STACKNAME:-UNDEF}"
 SVCALIASES=(${ARTIFACTORY_PROXY_AKAS//,/ })
+BKUPCRON="/usr/local/sbin/bkup2s3.sh"
 
 ##
 ## Set up an error logging and exit-state
@@ -301,6 +302,69 @@ then
    echo "New install: push creds to S3 to support future rebuilds"
    aws s3 sync "${AFHOMEDIR}"/access/etc/keys/ s3://"${S3BKUPDEST}"/creds/
 fi
+
+##########################
+## Create Backup Script ##
+echo "Creating sync-to-s3 backup script..."
+
+cat << EOF >> "${BKUPCRON}"
+#!/bin/bash
+# shellcheck disable=SC1091,SC2034,SC2015,SC2046,SC2155
+# set +x
+#
+# Script to move Artifactory-generated backups from the backups
+# filesystem-target to S3
+#
+#################################################################
+PROGNAME=$(basename "${0}")
+while read -r AFENV
+do
+   # shellcheck disable=SC2163
+   export "\${AFENV}"
+done < /etc/cfn/AF.envs
+BKUPDIR="\${ARTIFACTORY_BACKUPDIR}"
+BKUPBKT="\${ARTIFACTORY_S3_BACKUPS}"
+BKUPDST="\${BKUPBKT}/Backups/"
+
+##
+## Set up an error logging and exit-state
+function err_exit {
+   local ERRSTR="\${1}"
+   local SCRIPTEXIT=\${2:-1}
+
+   # Our output channels
+   echo "\${ERRSTR}" > /dev/stderr
+   logger -t "\${PROGNAME}" -p kern.crit "\${ERRSTR}"
+
+   # Need our exit to be an integer
+   if [[ \${SCRIPTEXIT} =~ ^[0-9]+\$ ]]
+   then
+      exit "\${SCRIPTEXIT}"
+   else
+      exit 1
+   fi
+}
+
+for BKUPSRC in /var/backups/[0-9]*.[0-9]*
+do
+   printf "Syncing %s to %s... " "\${BKUPSRC}" "\${BKUPDST}"
+   aws s3 sync --quiet "\${BKUPSRC}" "s3://\${BKUPDST}/\${BKUPSRC}"/ && \
+     echo "Success." || err_exit "Failed syncing \${BKUPSRC} to \${BKUPDST}"
+
+   printf "Cleanup: removing %s... " "\${BKUPSRC}"
+   rm -rf "\${BKUPSRC}" && echo "Success." || \
+     err_exit "Failed to remove \${BKUPSRC}"
+done
+EOF
+
+##   End backup Script  ##
+##########################
+
+# Put the backup script in cron
+# Add backupscript to crontab
+printf "Creating cron entry for backup job..."
+(crontab -l 2>/dev/null; echo "0 23 * * * ${BKUPCRON}") | crontab - && \
+  echo "Success" || err_exit "Failed creating backup cron-job"
 
 # Signal completion to CFn
 printf "Send success signal to CFn... "
