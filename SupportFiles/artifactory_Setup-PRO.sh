@@ -79,7 +79,7 @@ function ReverseProxy {
          echo "Success" || \
          err_exit 'Failed to create reverse-proxy config'
 
-      if [[ $(getenforce) != "Disabled" ]]
+      if [[ $(getenforce) != Disabled ]]
       then
          chcon --reference="${NGINXDIR}"/nginx.conf "${PROXCONF}"
       fi
@@ -97,8 +97,12 @@ function ReverseProxy {
                   sed 's/^.*: //')
 
    # Adjust 
-   if [[ ! -z ${CURBUCKTHASH+xxx} ]] 
+   if [[ -z ${CURBUCKTHASH+xxx} ]] || [ "${CURBUCKTHASH}" = "" ]
    then
+      printf "No 'server_names_hash_bucket_size' error detected:\n"
+      printf "\tserver config should be ok as is.\n"
+   else
+      echo "Doubling currently-defined 'server_names_hash_bucket_size' size."
       NEWHASH=$((CURBUCKTHASH * 2))
       sed -i '/^http /a server_names_hash_bucket_size '"${NEWHASH}"';' \
         "${NGINXDIR}"/nginx.conf
