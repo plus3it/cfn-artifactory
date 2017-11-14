@@ -313,6 +313,7 @@
     },
     "DbAdminPass": {
       "Description": "Password of the Artifactory master database-user.",
+      "NoEcho": "True",
       "Type": "String"
     },
     "DbDataSize": {

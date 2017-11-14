@@ -153,6 +153,7 @@
     "ArtifactoryDbPassword": {
       "ConstraintDescription": "A suitably-complex, alphanumeric string between 6 and 20 characters.",
       "Description": "Remote PostGreSQL database's master user's login password.",
+      "NoEcho": "True",
       "Type": "String"
     },
     "ArtifactoryDbPort": {
