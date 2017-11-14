@@ -12,6 +12,10 @@ do
    export "${AFENV}"
 done < /etc/cfn/AF.envs
 AFRPM="${ARTIFACTORY_RPM:-UNDEF}"
+ARTIFACTORY_ETC="${ARTIFACTORY_HOME}/etc"
+ARTIFACTORY_LOGS="${ARTIFACTORY_HOME}/logs"
+ARTIFACTORY_TOMCAT_HOME="${ARTIFACTORY_HOME}/tomcat"
+ARTIFACTORY_VARS="${ARTIFACTORY_HOME}/etc/default"
 S3BKUPDEST="${ARTIFACTORY_S3_BACKUPS:-UNDEF}"
 AFHOMEDIR="${ARTIFACTORY_HOME:-UNDEF}"
 AFETCDIR="${ARTIFACTORY_ETC:-UNDEF}"
@@ -160,8 +164,6 @@ function RebuildStuff {
 #######################
 ## Main Program Logic  
 #######################
-exec >> /var/log/"${PROGNAME}".log
-exec 2>&1
 
 # Install the Artifactory RPM
 echo "Attempt to install Artifactory RPM..."
@@ -286,13 +288,6 @@ sed -i '/Artifactory config-tasks/,$d' "$(readlink -f /etc/rc.d/rc.local)"
 # Pull down key-files if we're rebuilding
 RebuildStuff
 
-# Start it up...
-printf "Start Artifactory... "
-systemctl start artifactory && echo "Success!" || \
-  err_exit 'Failed to start Artifactory service'
-echo "Enable Artifactory service"
-systemctl enable artifactory
-
 # Add a reverse-proxy
 ReverseProxy
 
@@ -365,8 +360,3 @@ EOF
 printf "Creating cron entry for backup job..."
 (crontab -l 2>/dev/null; echo "0 23 * * * ${BKUPCRON}") | crontab - && \
   echo "Success" || err_exit "Failed creating backup cron-job"
-
-# Signal completion to CFn
-printf "Send success signal to CFn... "
-/opt/aws/bin/cfn-signal -e 0 --stack "${STACKNAME}" --resource ArtifactoryEC2 \
---url "${CFNENDPOINT}" || err_exit 'Failed sending CFn signal'

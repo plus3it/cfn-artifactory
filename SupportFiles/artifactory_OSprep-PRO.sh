@@ -87,7 +87,8 @@ function FipsDisable {
    # Prep for Artifactory install on reboot
    SetupRcLocal
 
-   shutdown -r +1 'Rebooting to complete disablement of FIPS mode'
+   # Log a warning about FIPS
+   echo "System will need to be rebooted for FIPS-disable to take full effect"
 }
 
 ##
