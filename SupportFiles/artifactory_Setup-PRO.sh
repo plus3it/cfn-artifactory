@@ -295,13 +295,13 @@ ReverseProxy
 if [[ ! -z ${NEWBUILD+xxx} ]]
 then
    printf 'Temp-starting Artifactory to create credentials... '
-   systemctl start artifactory && echo "Success" || \\
+   systemctl start artifactory && echo "Success" || \
      err_exit 'Failed to start Artifactory'
    echo "New install: push creds to S3 to support future rebuilds"
    aws s3 sync "${AFHOMEDIR}"/access/etc/keys/ s3://"${S3BKUPDEST}"/creds/
    printf 'Ending Artifactory temp-start... '
-   systemctl stop artifactory && echo "Success" || \\
-     err_exit 'Failed to start Artifactory'
+   systemctl stop artifactory && echo "Success" || \
+     err_exit 'Failed to stop Artifactory'
 fi
 
 ##########################

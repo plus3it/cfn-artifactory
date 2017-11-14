@@ -565,11 +565,8 @@
           "Domainname": { "Ref": "Domainname" },
           "EpelRepo": { "Ref": "EpelRepo" },
           "Hostname": { "Ref": "Hostname" },
-          "InstanceProfile": {
-            "Fn::GetAtt": [ "IamRes", "Outputs.InstanceRoleProfile" ]
-          },
           "InstanceRole": {
-            "Fn::GetAtt": [ "IamRes", "Outputs.InstanceRole" ]
+            "Fn::GetAtt": [ "IamRes", "Outputs.InstanceRoleProfile" ]
           },
           "InstanceType": { "Ref": "InstanceType" },
           "JfrogRepositoryName": { "Ref": "JfrogRepositoryName" },
@@ -596,7 +593,7 @@
               ]
             ]
           },
-          "SubnetIds": { "Ref": "SubnetIds" }
+          "SubnetId": { "Ref": "SubnetIds" }
         },
         "TemplateURL": { "Ref": "Ec2TemplateUri" }
       },
