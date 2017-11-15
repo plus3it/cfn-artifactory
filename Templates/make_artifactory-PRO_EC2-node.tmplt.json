@@ -463,9 +463,9 @@
             "launch": [
               "setup",
               "admkey-install",
-              "osprep-launch",
               "watchmaker-install",
               "watchmaker-launch",
+              "osprep-launch",
               {
                 "Fn::If": [
                   "UseCfnAppInstaller",
