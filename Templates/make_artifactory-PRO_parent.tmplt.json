@@ -602,7 +602,7 @@
           "JfrogRepositoryUrl": { "Ref": "JfrogRepositoryUrl" },
           "KeyPairName": { "Ref": "KeyPairName" },
           "NoPublicIp": { "Ref": "NoPublicIp" },
-          "NoReboot": "False",
+          "NoReboot": "false",
           "PipIndexFips": { "Ref": "PipIndexFips" },
           "PipRpm": { "Ref": "PipRpm" },
           "ProvisionUser": { "Ref": "ProvisionUser" },
