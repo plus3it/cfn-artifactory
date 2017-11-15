@@ -67,7 +67,70 @@
     }
   },
   "Metadata": {
-    "AWS::CloudFormation::Interface": {}
+    "AWS::CloudFormation::Interface": {
+     "ParameterGroups": [
+        {
+          "Parameters": [
+            "Hostname",
+            "Domainname",
+            "ProxyHostname",
+            "AkaList",
+            "AmiId",
+            "InstanceType",
+            "ProvisionUser",
+            "KeyPairName",
+            "AdminPubkeyURL",
+            "InstanceRole",
+            "SecurityGroupIds",
+            "SubnetId",
+            "NoPublicIp",
+            "EpelRepo",
+            "PipRpm",
+            "PyStache",
+            "PipIndexFips",
+            "NoReboot",
+            "WatchmakerConfig",
+            "WatchmakerEnvironment",
+            "ProxyTemplateUrl",
+            "CfnEndpointUrl"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Storage"
+          },
+          "Parameters": [
+            "S3BackupBucket",
+            "AppVolumeDevice",
+            "AppVolumeMountPath",
+            "AppVolumeSize",
+            "AppVolumeType",
+            "BackupVolumeDevice",
+            "BackupVolumeMountPath",
+            "BackupVolumeSize",
+            "BackupVolumeType"
+          ]
+        },
+        {
+          "Label": {
+            "default": "Artifactory Setup"
+          },
+          "Parameters": [
+            "ArtifactoryOsPrepScriptUrl",
+            "ArtifactoryAppInstallScriptUrl",
+            "JfrogRepositoryUrl",
+            "ArtifactoryRpm",
+            "ArtifactoryLicenseUrl",
+            "ArtifactoryHome",
+            "ArtifactoryDbAdmin",
+            "ArtifactoryDbHost",
+            "ArtifactoryDbInst",
+            "ArtifactoryDbPassword",
+            "ArtifactoryDbPort"
+          ]
+        }
+      ]
+    }
   },
   "Outputs": {
     "ArtifactoryInstanceId": {
@@ -283,11 +346,6 @@
       ],
       "Default": "t2.large",
       "Description": "Amazon EC2 instance type",
-      "Type": "String"
-    },
-    "JfrogRepositoryName": {
-      "Default": "bintray--jfrog-artifactory-pro-rpms",
-      "Description": "Name of the yum repository hosting Artifactory RPMs.",
       "Type": "String"
     },
     "JfrogRepositoryUrl": {

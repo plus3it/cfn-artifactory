@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "This template coordinates the running of the Artifactory ST, S3,RDS, IAM, EC2 and ELBv2 templates.",
+  "Description": "This template coordinates the running of the Artifactory SG, S3,RDS, IAM, EC2 and ELBv2 templates.",
   "Metadata": {
     "AWS::CloudFormation::Interface": {
       "ParameterGroups": [
@@ -9,11 +9,12 @@
             "default": "Child Templates"
           },
           "Parameters": [
-            "RdsTemplateUri",
-            "IamTemplateUri",
-            "Ec2TemplateUri",
+            "SgTemplateUri",
             "BucketTemplateUri",
-            "SgTemplateUri"
+            "IamTemplateUri",
+            "RdsTemplateUri",
+            "Ec2TemplateUri",
+            "ElbTemplate"
           ]
         },
         {
@@ -31,8 +32,7 @@
             "ProxyHostname",
             "AkaList",
             "SubnetIds",
-            "NoPublicIp",
-            "NoReboot"
+            "NoPublicIp"
           ]
         },
         {
@@ -44,7 +44,6 @@
             "ArtifactoryAppInstallScriptUrl",
             "ProxyTemplateUrl",
             "ArtifactoryLicenseUrl",
-            "JfrogRepositoryName",
             "JfrogRepositoryUrl",
             "ArtifactoryRpm",
             "ArtifactoryHome"
@@ -78,6 +77,18 @@
             "ArtifactoryDbPort",
             "DbAdminName",
             "DbAdminPass"
+          ]
+        },
+        {
+          "Label": {
+            "default": "ELB Parameters"
+          },
+          "Parameters": [
+            "ProxyPrettyName",
+            "ArtifactoryListenerCert",
+            "ArtifactoryServicePort",
+            "ElbSubnets",
+            "BackendTimeout"
           ]
         },
         {
@@ -182,7 +193,7 @@
     },
     "AmiId": {
       "AllowedPattern": "^ami-[0-9a-z]{8}$|^ami-[0-9a-z]{17}$",
-      "Description": "ID of the AMI to launch",
+      "Description": "ID of the AMI to launch (select a Red Hat or other EL-variant)",
       "Type": "String"
     },
     "AppVolumeDevice": {
@@ -443,11 +454,6 @@
       "Description": "Amazon EC2 instance type",
       "Type": "String"
     },
-    "JfrogRepositoryName": {
-      "Default": "bintray--jfrog-artifactory-pro-rpms",
-      "Description": "Name of the yum repository hosting Artifactory RPMs.",
-      "Type": "String"
-    },
     "JfrogRepositoryUrl": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Default": "http://jfrog.bintray.com/artifactory-pro-rpms",
@@ -467,20 +473,13 @@
       "Description": "Controls whether to assign the instance a public IP. Recommended to leave at \"true\" _unless_ launching in a public subnet",
       "Type": "String"
     },
-    "NoReboot": {
-      "AllowedValues": [
-        "false",
-        "true"
-      ],
-      "Default": "false",
-      "Description": "Controls whether to reboot the instance as the last step of cfn-init execution",
-      "Type": "String"
-    },
     "PgsqlVersion": {
       "AllowedValues": [
+        "9.6.5",
         "9.6.3",
         "9.6.2",
         "9.6.1",
+        "9.5.9",
         "9.5.7",
         "9.5.6",
         "9.5.4",
@@ -600,11 +599,10 @@
             "Fn::GetAtt": [ "IamRes", "Outputs.InstanceRoleProfile" ]
           },
           "InstanceType": { "Ref": "InstanceType" },
-          "JfrogRepositoryName": { "Ref": "JfrogRepositoryName" },
           "JfrogRepositoryUrl": { "Ref": "JfrogRepositoryUrl" },
           "KeyPairName": { "Ref": "KeyPairName" },
           "NoPublicIp": { "Ref": "NoPublicIp" },
-          "NoReboot": { "Ref": "NoReboot" },
+          "NoReboot": "False",
           "PipIndexFips": { "Ref": "PipIndexFips" },
           "PipRpm": { "Ref": "PipRpm" },
           "ProvisionUser": { "Ref": "ProvisionUser" },
