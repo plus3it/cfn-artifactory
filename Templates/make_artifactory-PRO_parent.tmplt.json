@@ -1,6 +1,6 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "This template coordinates the running of the Artifactory S3, IAM and EC2 templates.",
+  "Description": "This template coordinates the running of the Artifactory ST, S3,RDS, IAM, EC2 and ELBv2 templates.",
   "Metadata": {
     "AWS::CloudFormation::Interface": {
       "ParameterGroups": [
@@ -248,6 +248,11 @@
       "Description": "URL to Artifactory license file",
       "Type": "String"
     },
+    "ArtifactoryListenerCert": {
+      "Default": "",
+      "Description": "Name/ID of the ACM-managed SSL Certificate to protect public listener.",
+      "Type": "String"
+    },
     "ArtifactoryOsPrepScriptUrl": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Description": "URL to script that prepares the EC2 instance's host OS for installation of Artifactory",
@@ -257,6 +262,19 @@
       "Default": "jfrog-artifactory-pro",
       "Description": "Name of the Artifactory installation-RPM.",
       "Type": "String"
+    },
+    "ArtifactoryServicePort": {
+      "Default": "8081",
+      "Description": "TCP Port number that the Artifactory host listens to.",
+      "MaxValue": "65535",
+      "Type": "Number"
+    },
+    "BackendTimeout": {
+      "Default": "600",
+      "Description": "How long - in seconds - back-end connection may be idle before attempting session-cleanup",
+      "MinValue": "60",
+      "MaxValue": "3600",
+      "Type": "Number"
     },
     "BackupBucket": {
       "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$",
@@ -308,7 +326,7 @@
       "Type": "String"
     },
     "DbAdminName": {
-      "Description": "Name of the Sonarqube master database-user.",
+      "Description": "Name of the Artifactory master database-user.",
       "Type": "String"
     },
     "DbAdminPass": {
@@ -325,7 +343,7 @@
       "Type": "Number"
     },
     "DbInstanceName": {
-      "Description": "Instance-name of the Sonarqube database.",
+      "Description": "Instance-name of the Artifactory database.",
       "Type": "String"
     },
     "DbInstanceType": {
@@ -363,6 +381,15 @@
     "Ec2TemplateUri": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Description": "URI for the template that creates Artifactory's application-hosting EC2 instance.",
+      "Type": "String"
+    },
+    "ElbSubnets": {
+      "Description": "Public-facing subnets for ELB to proxy requests from.",
+      "Type": "List<AWS::EC2::Subnet::Id>"
+    },
+    "ElbTemplate": {
+      "AllowedPattern": "^$|^http://.*$|^https://.*$",
+      "Description": "URI for the template that creates the ELB providing public-to-private reverse-proxy service.",
       "Type": "String"
     },
     "EpelRepo": {
@@ -481,6 +508,10 @@
       "Description": "Default login user account name.",
       "Type": "String"
     },
+    "ProxyPrettyName": {
+      "Description": "A short, human-friendly label to assign to the ELB (no capital letters).",
+      "Type": "String"
+    },
     "ProxyHostname":{
       "Description": "FQDN used by remote clients to attach to the Artifactory service.",
       "Type": "String"
@@ -596,6 +627,38 @@
           "SubnetId": { "Ref": "SubnetIds" }
         },
         "TemplateURL": { "Ref": "Ec2TemplateUri" }
+      },
+      "Type": "AWS::CloudFormation::Stack"
+    },
+    "ElbRes": {
+      "Properties": {
+        "Parameters": {
+          "ArtifactoryListenerCert": { "Ref": "ArtifactoryListenerCert" },
+          "ArtifactoryListenPort": "443",
+          "ArtifactoryInstanceId": {
+            "Fn::GetAtt": [ "Ec2Res", "Outputs.ArtifactoryInstanceId" ]
+          },
+          "ArtifactoryServicePort": { "Ref": "ArtifactoryServicePort" },
+          "BackendTimeout": { "Ref": "BackendTimeout" },
+          "HaSubnets": {
+            "Fn::Join": [
+              ",",
+              { "Ref": "ElbSubnets" }
+            ]
+          },
+          "ProxyPrettyName": { "Ref": "ProxyPrettyName" },
+          "SecurityGroupIds": {
+            "Fn::Join": [
+              ",",
+              [
+                { "Fn::GetAtt": [ "SgRes", "Outputs.AppSg" ] }
+              ]
+            ]
+          },
+          "TargetVPC": { "Ref": "TargetVPC" }
+        },
+        "TemplateURL": { "Ref": "ElbTemplate" },
+        "TimeoutInMinutes": "10"
       },
       "Type": "AWS::CloudFormation::Stack"
     },
