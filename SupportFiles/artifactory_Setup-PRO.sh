@@ -308,6 +308,11 @@ fi
 ## Create Backup Script ##
 echo "Creating sync-to-s3 backup script..."
 
+printf "Setting base permissions/ownerships... "
+install -b -m 000700 -o root -g root /dev/null "${BKUPCRON}" && \
+  echo "Success." || err_exit "Failed setting base permissions/ownerships"
+
+printf "Injecting script contents... "
 cat << EOF >> "${BKUPCRON}"
 #!/bin/bash
 # shellcheck disable=SC1091,SC2034,SC2015,SC2046,SC2155
@@ -317,7 +322,7 @@ cat << EOF >> "${BKUPCRON}"
 # filesystem-target to S3
 #
 #################################################################
-PROGNAME=$(basename "${0}")
+PROGNAME=\$(basename "\${0}")
 while read -r AFENV
 do
    # shellcheck disable=SC2163
@@ -325,7 +330,7 @@ do
 done < /etc/cfn/AF.envs
 BKUPDIR="\${ARTIFACTORY_BACKUPDIR}"
 BKUPBKT="\${ARTIFACTORY_S3_BACKUPS}"
-BKUPDST="\${BKUPBKT}/Backups/"
+BKUPDST="\${BKUPBKT}/Backups"
 
 ##
 ## Set up an error logging and exit-state
@@ -346,17 +351,29 @@ function err_exit {
    fi
 }
 
-for BKUPSRC in /var/backups/[0-9]*.[0-9]*
+# Reroot to avoid creating some of the weird S3 pathing
+printf "Re-rooting to \${BKUPDIR}... "
+cd "\${BKUPDIR}" && echo "Success" || err_exit "Failed to cd to \${BKUPDIR}"
+
+for BKUPSRC in [0-9]*.[0-9]*
 do
    printf "Syncing %s to %s... " "\${BKUPSRC}" "\${BKUPDST}"
-   aws s3 sync --quiet "\${BKUPSRC}" "s3://\${BKUPDST}/\${BKUPSRC}"/ && \
+   aws s3 sync --quiet "\${BKUPSRC}" "s3://\${BKUPDST}/\${BKUPSRC}"/ && \\
      echo "Success." || err_exit "Failed syncing \${BKUPSRC} to \${BKUPDST}"
 
    printf "Cleanup: removing %s... " "\${BKUPSRC}"
-   rm -rf "\${BKUPSRC}" && echo "Success." || \
+   rm -rf "\${BKUPSRC}" && echo "Success." || \\
      err_exit "Failed to remove \${BKUPSRC}"
 done
 EOF
+
+# shellcheck disable=SC2181
+if [[ $? -eq 0 ]]
+then
+   echo "Success."
+else
+   err_exit "Injecting script contents... "
+fi
 
 ##   End backup Script  ##
 ##########################
