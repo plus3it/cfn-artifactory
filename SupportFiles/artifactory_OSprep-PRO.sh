@@ -45,6 +45,68 @@ function err_exit {
 }
 
 ##
+## Ensure that share directories are properly set up
+function EfsSetup {
+   local SHARESRVR
+   local SHAREROOT
+   local SHAREDIRS
+   local SHARETYPE
+   SHARESRVR=$(echo "${ARTIFACTORY_PERSISTENT_SHARE_PATH}" | cut -d ':' -f 1)
+   SHAREROOT=$(echo "${ARTIFACTORY_PERSISTENT_SHARE_PATH}" | cut -d ':' -f 2)
+   SHAREDIRS=(
+         ${ARTIFACTORY_BACKUPDIR}
+         ${ARTIFACTORY_DATADIR}
+      )
+   SHARETYPE="${ARTIFACTORY_PERSISTENT_SHARE_TYPE}"
+
+   if [[ ${SHARETYPE} == nfs ]]
+   then
+      printf "Checking for NFS utils... "
+      if [[ $(rpm -qa nfs-utils) == '' ]]
+      then
+         yum --quiet -y install autofs nfs-utils && \
+           echo "Success: installed NFS utils" || \
+           err_exit "Unable to find/install NFS utils"
+      else
+         echo "Success"
+      fi
+   fi
+
+   printf "Testing if %s:%s is a valid %s share... " "${SHARESRVR}" \
+     "${SHAREROOT}" "${SHARETYPE}"
+   mount -t "${SHARETYPE}" "${SHARESRVR}":"${SHAREROOT}" /mnt && \
+     echo "Success" || err_exit "Invalid share/path"
+
+   for SHAREDIR in "${SHAREDIRS[@]}"
+   do
+       SHAREMNT=$(basename ${SHAREDIR})
+       printf "Checking if %s exists... " "${SHAREMNT}"
+       if [[ -d /mnt/${SHAREMNT} ]]
+       then
+           echo "Yes"
+       else
+           printf "No: Attempting to create... "
+           mkdir -p /mnt/"${SHAREMNT}" && echo "Success" || \
+             err_exit "Failed to create ${SHAREMNT}"
+       fi
+
+       if [[ $( grep -q "${SHAREDIR}" /etc/fstab )$? -eq 0 ]]
+       then
+          printf "The fstab already has %s:%s%s defined\n" \
+            "${SHARESRVR}" "${SHAREROOT}" "${SHAREMNT}"
+       else
+          printf "No entry for %s found in fstab: Creating... " "${SHAREDIR}"
+          printf "%s:%s/%s\t%s\t%s\tdefaults\t0 0\n" "${SHARESRVR}" \
+            "${SHAREROOT}" "${SHAREMNT}" "${SHAREDIR}" "${SHARETYPE}" \
+              >> /etc/fstab && echo "Success" || \
+              err_exit "Failed creating fstab entry for ${SHAREMNT}"
+       fi
+   done
+
+   umount /mnt
+}
+
+##
 ## Add exceptions to host firewall config
 function FwRules {
    for FWPORT in "${FWPORTS[@]}"
@@ -158,6 +220,15 @@ then
    setenforce "${GETSELSTATE}" || echo "Couldn't reset SELinux"
 else
    FwRules
+fi
+
+# Check if share-setup handling is necessary
+if [[ ! -z ${ARTIFACTORY_PERSISTENT_SHARE_PATH+xxx} ]]
+then
+   echo "External NAS share is defined for use. Configure... "
+   EfsSetup
+else
+   echo "Only local storage is defined for use."
 fi
 
 # De-FIPS as necessary...
