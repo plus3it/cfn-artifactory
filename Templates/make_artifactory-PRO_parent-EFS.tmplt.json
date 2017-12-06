@@ -51,21 +51,6 @@
         },
         {
           "Label": {
-            "default": "Artifactory Storage"
-          },
-          "Parameters": [
-            "AppVolumeDevice",
-            "AppVolumeSize",
-            "AppVolumeType",
-            "AppVolumeMountPath",
-            "BackupVolumeDevice",
-            "BackupVolumeSize",
-            "BackupVolumeType",
-            "BackupVolumeMountPath"
-          ]
-        },
-        {
-          "Label": {
             "default": "Database Parameters"
           },
           "Parameters": [
@@ -196,45 +181,6 @@
       "Description": "ID of the AMI to launch (select a Red Hat or other EL-variant)",
       "Type": "String"
     },
-    "AppVolumeDevice": {
-      "AllowedValues": [
-        "",
-        "/dev/xvdf",
-        "/dev/xvdg",
-        "/dev/xvdh",
-        "/dev/xvdi",
-        "/dev/xvdj"
-      ],
-      "Default": "",
-      "Description": "Device to mount an extra EBS volume. Leave blank to launch without an extra application volume",
-      "Type": "String"
-    },
-    "AppVolumeMountPath": {
-      "AllowedPattern": "/.*",
-      "Default": "/var/cache/artifactory",
-      "Description": "Filesystem path to mount the extra app volume. Ignored if \"AppVolumeDevice\" is blank",
-      "Type": "String"
-    },
-    "AppVolumeSize": {
-      "ConstraintDescription": "Must be between 1GB and 16384GB.",
-      "Default": "10",
-      "Description": "Size in GB of the EBS volume to create. Ignored if \"AppVolumeDevice\" is blank",
-      "MaxValue": "16384",
-      "MinValue": "10",
-      "Type": "Number"
-    },
-    "AppVolumeType": {
-      "AllowedValues": [
-        "gp2",
-        "io1",
-        "sc1",
-        "st1",
-        "standard"
-      ],
-      "Default": "gp2",
-      "Description": "Type of EBS volume to create. Ignored if \"AppVolumeDevice\" is blank",
-      "Type": "String"
-    },
     "ArtifactoryAppInstallScriptUrl": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Description": "URL to script that installs Artifactory to the EC2 instance.",
@@ -290,45 +236,6 @@
     "BackupBucket": {
       "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$",
       "Description": "S3 Bucket for longer-term retention of backups (optional).",
-      "Type": "String"
-    },
-    "BackupVolumeDevice": {
-      "AllowedValues": [
-        "",
-        "/dev/xvdk",
-        "/dev/xvdl",
-        "/dev/xvdm",
-        "/dev/xvdn",
-        "/dev/xvdo"
-      ],
-      "Default": "",
-      "Description": "Device to mount an backup-staging location. Leave blank to launch without a backup-staging volume",
-      "Type": "String"
-    },
-    "BackupVolumeMountPath": {
-      "AllowedPattern": "/.*",
-      "Default": "/var/backups",
-      "Description": "Filesystem path to mount the backup-stageing volume. Ignored if \"BackupVolumeDevice\" is blank",
-      "Type": "String"
-    },
-    "BackupVolumeSize": {
-      "ConstraintDescription": "Must be between 1GB and 16384GB.",
-      "Default": "10",
-      "Description": "Size in GB of the EBS volume to create. Ignored if \"BackupVolumeDevice\" is blank",
-      "MaxValue": "16384",
-      "MinValue": "10",
-      "Type": "Number"
-    },
-    "BackupVolumeType": {
-      "AllowedValues": [
-        "gp2",
-        "io1",
-        "sc1",
-        "st1",
-        "standard"
-      ],
-      "Default": "gp2",
-      "Description": "Type of EBS volume to create. Ignored if \"BackupVolumeDevice\" is blank",
       "Type": "String"
     },
     "BucketTemplateUri": {
@@ -567,10 +474,10 @@
           "AdminPubkeyURL": { "Ref": "AdminPubkeyURL" },
           "AkaList": { "Ref": "AkaList" },
           "AmiId": { "Ref": "AmiId" },
-          "AppVolumeDevice": { "Ref": "AppVolumeDevice" },
-          "AppVolumeMountPath": { "Ref": "AppVolumeMountPath" },
-          "AppVolumeSize": { "Ref": "AppVolumeSize" },
-          "AppVolumeType": { "Ref": "AppVolumeType" },
+          "AppVolumeDevice": "",
+          "AppVolumeMountPath": "/var/cache/artifactory",
+          "AppVolumeSize": "10",
+          "AppVolumeType": "gp2",
           "ArtifactoryAppInstallScriptUrl": { "Ref": "ArtifactoryAppInstallScriptUrl" },
           "ArtifactoryDbAdmin": { "Ref": "DbAdminName" },
           "ArtifactoryDbHost": {
@@ -583,10 +490,10 @@
           "ArtifactoryLicenseUrl": { "Ref": "ArtifactoryLicenseUrl" },
           "ArtifactoryOsPrepScriptUrl": { "Ref": "ArtifactoryOsPrepScriptUrl" },
           "ArtifactoryRpm": { "Ref": "ArtifactoryRpm" },
-          "BackupVolumeDevice": { "Ref": "BackupVolumeDevice" },
-          "BackupVolumeMountPath": { "Ref": "BackupVolumeMountPath" },
-          "BackupVolumeSize": { "Ref": "BackupVolumeSize" },
-          "BackupVolumeType": { "Ref": "BackupVolumeType" },
+          "BackupVolumeDevice": "",
+          "BackupVolumeMountPath": "/var/backups",
+          "BackupVolumeSize": "10",
+          "BackupVolumeType": "gp2",
           "CfnEndpointUrl": {
             "Fn::Join": [
               ".",
@@ -608,6 +515,16 @@
           "KeyPairName": { "Ref": "KeyPairName" },
           "NoPublicIp": { "Ref": "NoPublicIp" },
           "NoReboot": "false",
+          "PersistentSharePath": {
+            "Fn::Join": [
+              "",
+              [
+                { "Fn::GetAtt": [ "EfsRes", "Outputs.EfsEndpoint" ] },
+                ":/"
+              ]
+            ]
+          },
+          "PersistentShareType": "nfs",
           "PipIndexFips": { "Ref": "PipIndexFips" },
           "PipRpm": { "Ref": "PipRpm" },
           "ProvisionUser": { "Ref": "ProvisionUser" },
