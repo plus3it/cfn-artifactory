@@ -376,6 +376,19 @@
       "Description": "Controls whether to reboot the instance as the last step of cfn-init execution",
       "Type": "String"
     },
+    "PersistentSharePath": {
+      "Default": "",
+      "Description": "Share-path of persisted Artifactory content.",
+      "Type": "String"
+    },
+    "PersistentShareType": {
+      "AllowedValues": [
+        "glusterfs",
+        "nfs"
+      ],
+      "Description": "Type of network share hosting the persisted Artifactory content.",
+      "Type": "String"
+    },
     "PipIndexFips": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Default": "https://pypi.org/simple/",
@@ -654,6 +667,12 @@
                        "\n",
                       "ARTIFACTORY_S3_BACKUPS=",
                        { "Ref": "S3BackupBucket" },
+                       "\n",
+                      "ARTIFACTORY_PERSISTENT_SHARE_PATH=",
+                       { "Ref": "PersistentSharePath" },
+                       "\n",
+                      "ARTIFACTORY_PERSISTENT_SHARE_TYPE=",
+                       { "Ref": "PersistentShareType" },
                        "\n",
                       "ARTIFACTORY_PROXY_HOST=",
                        { "Ref": "ProxyHostname" },
