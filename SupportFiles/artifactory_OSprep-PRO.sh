@@ -15,6 +15,7 @@ FWPORTS=(
 FWSVCS=(
       http
       https
+      artifactory
    )
 PGSQLDBPORT="${ARTIFACTORY_DBPORT:-UNDEF}"
 PGSQLDBHOST="${ARTIFACTORY_DBHOST:-UNDEF}"
@@ -120,12 +121,36 @@ function ShareSetup {
 ##
 ## Add exceptions to host firewall config
 function FwRules {
-   for FWPORT in "${FWPORTS[@]}"
+
+   # Update firewalld config
+   printf "Creating firewalld service for Artifactory... "
+   firewall-cmd --permanent --new-service=artifactory || \
+     err_exit 'Failed to initialize artifactory firewalld service'
+
+   printf "Setting short description for Artifactory firewalld service... "
+   firewall-cmd --permanent --service=artifactory \
+     --set-short="Artifactory Service Ports" || \
+     err_exit 'Failed to add short service description'
+
+   printf "Setting long description for Artifactory firewalld service... "
+   firewall-cmd --permanent --service=artifactory \
+     --set-description="Firewalld options supporting Artifactory deployments" || \
+     err_exit 'Failed to add long service description'
+
+   for SVCPORT in "${FWPORTS[@]}"
    do
-      printf "Adding port exception(s) for %s... " "${FWPORT}"
-      firewall-cmd --add-port="${FWPORT}" --permanent || \
-         echo "Failed adding port exception(s) for ${FWPORT}"
+      printf "Adding port %s to Artifactory's firewalld service-definition... " \
+        "${SVCPORT}"
+      firewall-cmd --permanent --service=artifactory \
+      --add-port="${SVCPORT}" || \
+        err_exit "Failed to add firewalld exception for ${SVCPORT}/tcp"
    done
+
+   # Restart firewalld to ensure permanent files get read
+   if [[ $(systemctl is-active firewalld) == active ]]
+   then
+      systemctl restart firewalld
+   fi
 
    for FWSVC in "${FWSVCS[@]}"
    do
@@ -234,11 +259,14 @@ else
 fi
 
 # Check if share-setup handling is necessary
-if [[ ! -z ${ARTIFACTORY_PERSISTENT_SHARE_PATH+xxx} ]]
+if [[ ${ARTIFACTORY_PERSISTENT_SHARE_TYPE} == nfs ]] ||
+   [[ ${ARTIFACTORY_PERSISTENT_SHARE_TYPE} == glusterfs ]]
 then
    echo "External NAS share is defined for use. Configure... "
    ShareSetup
-else
+elif [[ ${ARTIFACTORY_PERSISTENT_SHARE_TYPE} == "" ]] ||
+     [[ -z ${ARTIFACTORY_PERSISTENT_SHARE_TYPE+xx} ]]
+then
    echo "Only local storage is defined for use."
 fi
 
