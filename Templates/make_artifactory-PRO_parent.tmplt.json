@@ -605,6 +605,8 @@
           "NoReboot": "false",
           "PipIndexFips": { "Ref": "PipIndexFips" },
           "PipRpm": { "Ref": "PipRpm" },
+          "PersistentSharePath": "",
+          "PersistentShareType": "",
           "ProvisionUser": { "Ref": "ProvisionUser" },
           "ProxyHostname": { "Ref": "ProxyHostname" },
           "ProxyTemplateUrl": { "Ref": "ProxyTemplateUrl" },
