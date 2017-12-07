@@ -79,7 +79,7 @@ function ShareSetup {
 
    for SHAREDIR in "${SHAREDIRS[@]}"
    do
-       SHAREMNT=$(basename ${SHAREDIR})
+       SHAREMNT=$(basename "${SHAREDIR}")
 
        # Create subdirs in share if need be
        printf "Checking if %s exists... " "${SHAREMNT}"
