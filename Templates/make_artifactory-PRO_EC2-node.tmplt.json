@@ -1036,24 +1036,50 @@
                 "\n",
                 "\n",
                 "mounts:\n",
-                "  - [ ",
-                "\"",
-                { "Ref": "AppVolumeDevice" },
-                "\", ",
-                "\"",
-                { "Ref": "AppVolumeMountPath" },
-                "\", ",
-                "\"auto\" ",
-                "]\n",
-                "  - [ ",
-                "\"",
-                { "Ref": "BackupVolumeDevice" },
-                "\", ",
-                "\"",
-                { "Ref": "BackupVolumeMountPath" },
-                "\", ",
-                "\"auto\" ",
-                "]\n",
+                {
+                  "Fn::If": [
+                    "CreateAppVolume",
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "  - [ ",
+                          "\"",
+                          { "Ref": "AppVolumeDevice" },
+                          "\", ",
+                          "\"",
+                          { "Ref": "AppVolumeMountPath" },
+                          "\", ",
+                          "\"auto\" ",
+                          "]\n"
+                        ]
+                      ]
+                    },
+                    ""
+                  ]
+                },
+                {
+                  "Fn::If": [
+                    "CreateBackupVolume",
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "  - [ ",
+                          "\"",
+                          { "Ref": "BackupVolumeDevice" },
+                          "\", ",
+                          "\"",
+                          { "Ref": "BackupVolumeMountPath" },
+                          "\", ",
+                          "\"auto\" ",
+                          "]\n"
+                        ]
+                      ]
+                    },
+                    ""
+                  ]
+                },
                 "\n",
                 "runcmd:\n",
                 "  - |\n",
