@@ -46,7 +46,7 @@ function err_exit {
 
 ##
 ## Ensure that share directories are properly set up
-function EfsSetup {
+function ShareSetup {
    local SHARESRVR
    local SHAREROOT
    local SHAREDIRS
@@ -80,6 +80,8 @@ function EfsSetup {
    for SHAREDIR in "${SHAREDIRS[@]}"
    do
        SHAREMNT=$(basename ${SHAREDIR})
+
+       # Create subdirs in share if need be
        printf "Checking if %s exists... " "${SHAREMNT}"
        if [[ -d /mnt/${SHAREMNT} ]]
        then
@@ -90,6 +92,7 @@ function EfsSetup {
              err_exit "Failed to create ${SHAREMNT}"
        fi
 
+       # Create fstab entries if need be
        if [[ $( grep -q "${SHAREDIR}" /etc/fstab )$? -eq 0 ]]
        then
           printf "The fstab already has %s:%s%s defined\n" \
@@ -100,6 +103,14 @@ function EfsSetup {
             "${SHAREROOT}" "${SHAREMNT}" "${SHAREDIR}" "${SHARETYPE}" \
               >> /etc/fstab && echo "Success" || \
               err_exit "Failed creating fstab entry for ${SHAREMNT}"
+       fi
+
+       # Create mountpoints if need be
+       if [[ ! -d ${SHAREDIR} ]]
+       then
+          printf "Attempting to create %s... " "${SHAREDIR}"
+          mkdir -p "${SHAREDIR}" && echo "Success" || \
+            err_exit "Failed creating ${SHAREDIR}"
        fi
    done
 
@@ -226,10 +237,13 @@ fi
 if [[ ! -z ${ARTIFACTORY_PERSISTENT_SHARE_PATH+xxx} ]]
 then
    echo "External NAS share is defined for use. Configure... "
-   EfsSetup
+   ShareSetup
 else
    echo "Only local storage is defined for use."
 fi
+
+# Make sure everything's mounted that ought to be...
+mount -a
 
 # De-FIPS as necessary...
 if [[ -f ${CHKFIPS} ]] && [[ $(grep -q 1 "${CHKFIPS}")$? -eq 0 ]]
