@@ -3,52 +3,97 @@
   "Conditions": {
     "SetBucketName": {
       "Fn::Not": [
-        {
-          "Fn::Equals": [
-            { "Ref": "BackupBucket" },
-            ""
-          ]
-        }
+        { "Fn::Equals": [ { "Ref": "BackupBucket" }, "" ] }
       ]
     }
   },
   "Description": "This template sets up the Buckets used by Artifactory for S3-based storage",
-  "Resources": {
-    "Backups": {
-      "Type": "AWS::S3::Bucket",
-      "Properties": {
-        "AccessControl": "BucketOwnerFullControl",
-        "BucketName": {
-          "Fn::If": [
-            "SetBucketName",
-            { "Ref" : "BackupBucket" },
-            { "Ref" : "AWS::NoValue" }
-          ]
-        }
-      }
-    }
-  },
   "Outputs": {
     "BackupBucket": {
       "Description": "Artifactory S3 backup bucket name.",
       "Export": {
-        "Name" : { "Fn::Sub": "${AWS::StackName}-BackupBucket" }
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-BackupBucket"
+        }
       },
       "Value": { "Ref": "Backups" }
     },
     "BackupBucketArn": {
       "Description": "Artifactory S3 backup bucket ARN.",
       "Export": {
-        "Name" : { "Fn::Sub": "${AWS::StackName}-BackupBucketArn" }
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-BackupBucketArn"
+        }
       },
-      "Value": { "Fn::GetAtt": [ "Backups", "Arn" ] }
+      "Value": {
+        "Fn::GetAtt": [
+          "Backups",
+          "Arn"
+        ]
+      }
     }
   },
   "Parameters": {
     "BackupBucket": {
+      "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$",
       "Description": "S3 Bucket for longer-term retention of backups (optional).",
-      "Type": "String",
-      "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$"
+      "Type": "String"
+    },
+    "FinalExpirationDays": {
+      "ConstraintDescription": "Must be an integer value greater than '0'.",
+      "Default": "30",
+      "Description": "Number of days to retain objects before aging them out of the bucket",
+      "Type": "Number"
+    },
+    "RetainIncompleteDays": {
+      "ConstraintDescription": "Must be an integer value between '0' and '30'",
+      "Default": "3",
+      "Description": "Number of days to retain objects that were not completely uploaded.",
+      "MaxValue": "30",
+      "MinValue": "0",
+      "Type": "Number"
+    },
+    "TierToS3Days": {
+      "ConstraintDescription": "Must be an integer value between '1' and '30'",
+      "Default": "5",
+      "Description": "Number of days to retain objects in standard storage tier.",
+      "MaxValue": "30",
+      "MinValue": "1",
+      "Type": "Number"
+    }
+  },
+  "Resources": {
+    "Backups": {
+      "Properties": {
+        "AccessControl": "BucketOwnerFullControl",
+        "BucketName": {
+          "Fn::If": [
+            "SetBucketName",
+            { "Ref": "BackupBucket" },
+            { "Ref": "AWS::NoValue" }
+          ]
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": { "Ref": "RetainIncompleteDays" }
+              },
+              "ExpirationInDays": { "Ref": "FinalExpirationDays" },
+              "Id": "BackupTiering",
+              "Prefix": "Backups/",
+              "Status": "Enabled",
+              "Transitions": [
+                {
+                  "StorageClass": "GLACIER",
+                  "TransitionInDays": { "Ref": "TierToS3Days" }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "Type": "AWS::S3::Bucket"
     }
   }
 }
