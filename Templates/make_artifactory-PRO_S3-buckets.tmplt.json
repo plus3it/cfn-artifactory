@@ -6,6 +6,9 @@
         { "Fn::Equals": [ { "Ref": "BackupBucket" }, "" ] }
       ]
     },
+    "UseBucketInventoryTracking": {
+      "Fn::Equals": [ { "Ref": "BucketInventoryTracking" }, "true" ]
+    },
     "UseReportingLocation": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "ReportingBucket" }, "" ] }
@@ -41,7 +44,16 @@
   "Parameters": {
     "BackupBucket": {
       "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$",
-      "Description": "S3 Bucket for longer-term retention of backups (optional).",
+      "Description": "(Optional) Name to set for S3 Bucket used for longer-term retention of backups. Will be randomly named if left un-set.",
+      "Type": "String"
+    },
+    "BucketInventoryTracking": {
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "false",
+      "Description": "(Optional) Whether to enable generic bucket inventory-tracking. Requires setting of the 'ReportingBucket' parameter.",
       "Type": "String"
     },
     "FinalExpirationDays": {
@@ -90,7 +102,7 @@
                     "Destination": {
                       "BucketArn": { "Ref": "ReportingBucket" },
                       "Format": "CSV",
-                      "Prefix": "StorageReporting"
+                      "Prefix": "StorageReporting/Analytics"
                     },
                     "OutputSchemaVersion": "V_1"
                   },
@@ -107,6 +119,26 @@
             { "Ref": "AWS::NoValue" }
           ]
         },
+        "InventoryConfigurations": [
+          {
+            "Fn::If": [
+              "UseBucketInventoryTracking",
+              {
+                "Id": "BackupsInventory",
+                "Destination": {
+                  "BucketArn": { "Ref": "ReportingBucket" },
+                  "Format": "CSV",
+                  "Prefix": "StorageReporting/Inventory"
+                },
+                "Enabled": "true",
+                "IncludedObjectVersions": "Current",
+                "Prefix": "Backups/",
+                "ScheduleFrequency": "Weekly"
+              },
+              { "Ref": "AWS::NoValue" }
+            ]
+          }
+        ],
         "LifecycleConfiguration": {
           "Rules": [
             {
