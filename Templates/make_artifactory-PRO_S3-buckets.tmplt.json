@@ -3,52 +3,163 @@
   "Conditions": {
     "SetBucketName": {
       "Fn::Not": [
-        {
-          "Fn::Equals": [
-            { "Ref": "BackupBucket" },
-            ""
-          ]
-        }
+        { "Fn::Equals": [ { "Ref": "BackupBucket" }, "" ] }
+      ]
+    },
+    "UseBucketInventoryTracking": {
+      "Fn::Equals": [ { "Ref": "BucketInventoryTracking" }, "true" ]
+    },
+    "UseReportingLocation": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "ReportingBucket" }, "" ] }
       ]
     }
   },
   "Description": "This template sets up the Buckets used by Artifactory for S3-based storage",
-  "Resources": {
-    "Backups": {
-      "Type": "AWS::S3::Bucket",
-      "Properties": {
-        "AccessControl": "BucketOwnerFullControl",
-        "BucketName": {
-          "Fn::If": [
-            "SetBucketName",
-            { "Ref" : "BackupBucket" },
-            { "Ref" : "AWS::NoValue" }
-          ]
-        }
-      }
-    }
-  },
   "Outputs": {
     "BackupBucket": {
       "Description": "Artifactory S3 backup bucket name.",
       "Export": {
-        "Name" : { "Fn::Sub": "${AWS::StackName}-BackupBucket" }
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-BackupBucket"
+        }
       },
       "Value": { "Ref": "Backups" }
     },
     "BackupBucketArn": {
       "Description": "Artifactory S3 backup bucket ARN.",
       "Export": {
-        "Name" : { "Fn::Sub": "${AWS::StackName}-BackupBucketArn" }
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-BackupBucketArn"
+        }
       },
-      "Value": { "Fn::GetAtt": [ "Backups", "Arn" ] }
+      "Value": {
+        "Fn::GetAtt": [
+          "Backups",
+          "Arn"
+        ]
+      }
     }
   },
   "Parameters": {
     "BackupBucket": {
-      "Description": "S3 Bucket for longer-term retention of backups (optional).",
-      "Type": "String",
-      "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$"
+      "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$",
+      "Description": "(Optional) Name to set for S3 Bucket used for longer-term retention of backups. Will be randomly named if left un-set.",
+      "Type": "String"
+    },
+    "BucketInventoryTracking": {
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "false",
+      "Description": "(Optional) Whether to enable generic bucket inventory-tracking. Requires setting of the 'ReportingBucket' parameter.",
+      "Type": "String"
+    },
+    "FinalExpirationDays": {
+      "ConstraintDescription": "Must be an integer value greater than '0'.",
+      "Default": "30",
+      "Description": "Number of days to retain objects before aging them out of the bucket",
+      "Type": "Number"
+    },
+    "ReportingBucket": {
+      "AllowedPattern": "^arn:.*$|^$",
+      "ConstraintDescription": "String must start with 'arn:' (or be left wholly blank).",
+      "Default": "",
+      "Description": "(Optional) Destination for storing analytics data. Must be provided in ARN format.",
+      "Type": "String"
+    },
+    "RetainIncompleteDays": {
+      "ConstraintDescription": "Must be an integer value between '0' and '30'",
+      "Default": "3",
+      "Description": "Number of days to retain objects that were not completely uploaded.",
+      "MaxValue": "30",
+      "MinValue": "0",
+      "Type": "Number"
+    },
+    "TierToS3Days": {
+      "ConstraintDescription": "Must be an integer value between '1' and '30'",
+      "Default": "5",
+      "Description": "Number of days to retain objects in standard storage tier.",
+      "MaxValue": "30",
+      "MinValue": "1",
+      "Type": "Number"
+    }
+  },
+  "Resources": {
+    "Backups": {
+      "Properties": {
+        "AccessControl": "BucketOwnerFullControl",
+        "AnalyticsConfigurations": [
+          {
+            "Id": "Archivable",
+            "Prefix": "Backups/",
+            "StorageClassAnalysis": {
+              "DataExport": {
+                "Fn::If": [
+                  "UseReportingLocation",
+                  {
+                    "Destination": {
+                      "BucketArn": { "Ref": "ReportingBucket" },
+                      "Format": "CSV",
+                      "Prefix": "StorageReporting/Analytics"
+                    },
+                    "OutputSchemaVersion": "V_1"
+                  },
+                  { "Ref": "AWS::NoValue" }
+                ]
+              }
+            }
+          }
+        ],
+        "BucketName": {
+          "Fn::If": [
+            "SetBucketName",
+            { "Ref": "BackupBucket" },
+            { "Ref": "AWS::NoValue" }
+          ]
+        },
+        "InventoryConfigurations": [
+          {
+            "Fn::If": [
+              "UseBucketInventoryTracking",
+              {
+                "Id": "BackupsInventory",
+                "Destination": {
+                  "BucketArn": { "Ref": "ReportingBucket" },
+                  "Format": "CSV",
+                  "Prefix": "StorageReporting/Inventory"
+                },
+                "Enabled": "true",
+                "IncludedObjectVersions": "Current",
+                "Prefix": "Backups/",
+                "ScheduleFrequency": "Weekly"
+              },
+              { "Ref": "AWS::NoValue" }
+            ]
+          }
+        ],
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": { "Ref": "RetainIncompleteDays" }
+              },
+              "ExpirationInDays": { "Ref": "FinalExpirationDays" },
+              "Id": "BackupTiering",
+              "Prefix": "Backups/",
+              "Status": "Enabled",
+              "Transitions": [
+                {
+                  "StorageClass": "GLACIER",
+                  "TransitionInDays": { "Ref": "TierToS3Days" }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "Type": "AWS::S3::Bucket"
     }
   }
 }
