@@ -8,6 +8,11 @@
           "Fn::Equals": [ { "Ref": "DbNodeName" }, "" ]
         }
       ]
+    },
+    "UseDbSnapshot": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "DbSnapshotId" }, "" ] }
+      ]
     }
   },
   "Description": "This template deployes a small, single-AZ PGSQL database to support Artifactory.",
@@ -80,6 +85,11 @@
       "Description": "List of security groups to apply to the RDS database.",
       "Type": "List<AWS::EC2::SecurityGroup::Id>"
     },
+    "DbSnapshotId": {
+      "AllowedPattern": "^$|^arn:.*$",
+      "Description": "(Optional) RDS snapshot-ARN to clone new database from.",
+      "Type": "String"
+    },
     "DbStorageType" : {
       "AllowedValues": [
         "standard",
@@ -143,12 +153,6 @@
         "DBSubnetGroupName" : { "Ref" : "RDSdbSubnetGroup" },
         "Engine": "postgres",
         "EngineVersion": { "Ref": "PgsqlVersion" },
-        "MasterUsername": { "Ref": "DbAdminName" },
-        "MasterUserPassword": { "Ref": "DbAdminPass" },
-        "MultiAZ": { "Ref": "DbIsMultiAz" },
-        "PreferredBackupWindow": "23:30-00:00",
-        "PreferredMaintenanceWindow": "sun:00:30-sun:01:00",
-        "StorageType": { "Ref": "DbStorageType" },
         "Iops": {
           "Fn::If": [
             "SetIops",
@@ -156,6 +160,25 @@
             { "Ref": "AWS::NoValue" }
           ]
         },
+        "MasterUsername": { "Ref": "DbAdminName" },
+        "MasterUserPassword": { "Ref": "DbAdminPass" },
+        "MultiAZ": { "Ref": "DbIsMultiAz" },
+        "PreferredBackupWindow": "23:30-00:00",
+        "PreferredMaintenanceWindow": "sun:00:30-sun:01:00",
+        "SnapshotIdentifier": {
+          "Fn::If": [
+            "UseDbSnapshot",
+            { "Ref": "DbSnapshotId" },
+            { "Ref": "AWS::NoValue" }
+          ]
+        },
+        "StorageType": { "Ref": "DbStorageType" },
+        "Tags": [
+          {
+            "Key": "Description",
+            "Value": "Artifactory PgSQL database"
+          }
+        ],
         "PubliclyAccessible": "false",
         "VPCSecurityGroups": { "Ref": "DbSecurityGroup" }
       },
