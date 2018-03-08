@@ -40,6 +40,7 @@
       "Type": "String"
     },
     "DbAdminPass": {
+      "Default": "",
       "Description": "Password of the Artifactory master database-user.",
       "NoEcho": "True",
       "Type": "String"
@@ -53,6 +54,7 @@
       "Type": "Number"
     },
     "DbInstanceName": {
+      "Default": "",
       "Description": "Instance-name of the Artifactory database.",
       "Type": "String"
     },
@@ -168,7 +170,13 @@
             { "Ref": "AWS::NoValue" }
           ]
         },
-        "DBName": { "Ref": "DbInstanceName" },
+        "DBName": {
+          "Fn::If": [
+            "UseDbSnapshot",
+            { "Ref": "AWS::NoValue" },
+            { "Ref": "DbInstanceName" }
+          ]
+        },
         "DBSubnetGroupName": { "Ref": "RDSdbSubnetGroup" },
         "Engine": "postgres",
         "EngineVersion": { "Ref": "PgsqlVersion" },
@@ -179,7 +187,13 @@
             { "Ref": "AWS::NoValue" }
           ]
         },
-        "MasterUserPassword": { "Ref": "DbAdminPass" },
+        "MasterUserPassword": {
+          "Fn::If": [
+            "UseDbSnapshot",
+            { "Ref": "AWS::NoValue" },
+            { "Ref": "DbAdminPass" }
+          ]
+        },
         "MasterUsername": { "Ref": "DbAdminName" },
         "MultiAZ": { "Ref": "DbIsMultiAz" },
         "PreferredBackupWindow": "23:30-00:00",
