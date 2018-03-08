@@ -185,7 +185,7 @@
         "PreferredBackupWindow": "23:30-00:00",
         "PreferredMaintenanceWindow": "sun:00:30-sun:01:00",
         "PubliclyAccessible": "false",
-        "SnapshotIdentifier": {
+        "DBSnapshotIdentifier": {
           "Fn::If": [
             "UseDbSnapshot",
             { "Ref": "DbSnapshotId" },
