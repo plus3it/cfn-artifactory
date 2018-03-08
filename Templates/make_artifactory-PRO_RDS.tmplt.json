@@ -1,12 +1,12 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Conditions": {
-    "SetIops": { "Fn::Equals": [ { "Ref": "DbStorageType" }, "io1" ] },
+    "SetIops": {
+      "Fn::Equals": [ { "Ref": "DbStorageType" }, "io1" ]
+    },
     "SetNodeName": {
       "Fn::Not": [
-        {
-          "Fn::Equals": [ { "Ref": "DbNodeName" }, "" ]
-        }
+        { "Fn::Equals": [ { "Ref": "DbNodeName" }, "" ] }
       ]
     },
     "UseDbSnapshot": {
@@ -22,9 +22,16 @@
     "RdsEndpointAddress": {
       "Description": "RDS DB's endpoint FQDN.",
       "Export": {
-        "Name" : { "Fn::Sub": "${AWS::StackName}-RdsEndpointAddress" }
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-RdsEndpointAddress"
+        }
       },
-      "Value": { "Fn::GetAtt" : [ "RDSdb", "Endpoint.Address" ] }
+      "Value": {
+        "Fn::GetAtt": [
+          "RDSdb",
+          "Endpoint.Address"
+        ]
+      }
     }
   },
   "Parameters": {
@@ -44,19 +51,6 @@
       "MaxValue": "6144",
       "MinValue": "5",
       "Type": "Number"
-    },
-    "DbIsMultiAz": {
-      "AllowedValues": [
-        "false",
-        "true"
-      ],
-      "Default": "false",
-      "Description": "Select whether to create a multi-AZ RDS deployment.",
-      "Type": "String"
-    },
-    "DbNodeName": {
-      "Description": "NodeName of the Artifactory database.",
-      "Type": "String"
     },
     "DbInstanceName": {
       "Description": "Instance-name of the Artifactory database.",
@@ -81,6 +75,19 @@
       "Description": "Amazon RDS instance type",
       "Type": "String"
     },
+    "DbIsMultiAz": {
+      "AllowedValues": [
+        "false",
+        "true"
+      ],
+      "Default": "false",
+      "Description": "Select whether to create a multi-AZ RDS deployment.",
+      "Type": "String"
+    },
+    "DbNodeName": {
+      "Description": "NodeName of the Artifactory database.",
+      "Type": "String"
+    },
     "DbSecurityGroup": {
       "Description": "List of security groups to apply to the RDS database.",
       "Type": "List<AWS::EC2::SecurityGroup::Id>"
@@ -90,7 +97,14 @@
       "Description": "(Optional) RDS snapshot-ARN to clone new database from.",
       "Type": "String"
     },
-    "DbStorageType" : {
+    "DbStorageIops": {
+      "Default": "1000",
+      "Description": "Provisioned-IOPS of storage to used to host DB-data.",
+      "MaxValue": "30000",
+      "MinValue": "1000",
+      "Type": "Number"
+    },
+    "DbStorageType": {
       "AllowedValues": [
         "standard",
         "gp2",
@@ -100,16 +114,9 @@
       "Description": "Type of storage used to host DB-data.",
       "Type": "String"
     },
-    "DbStorageIops" : {
-      "Default": "1000",
-      "Description": "Provisioned-IOPS of storage to used to host DB-data.",
-      "MaxValue": "30000",
-      "MinValue": "1000",
-      "Type": "Number"
-    },
-    "DbSubnets" : {
-      "Type" : "List<AWS::EC2::Subnet::Id>",
-      "Description" : "Select at least two subnets, each in different Availability Zones"
+    "DbSubnets": {
+      "Description": "Select at least two subnets, each in different Availability Zones",
+      "Type": "List<AWS::EC2::Subnet::Id>"
     },
     "PgsqlVersion": {
       "AllowedValues": [
@@ -150,7 +157,7 @@
           ]
         },
         "DBName": { "Ref": "DbInstanceName" },
-        "DBSubnetGroupName" : { "Ref" : "RDSdbSubnetGroup" },
+        "DBSubnetGroupName": { "Ref": "RDSdbSubnetGroup" },
         "Engine": "postgres",
         "EngineVersion": { "Ref": "PgsqlVersion" },
         "Iops": {
@@ -160,11 +167,12 @@
             { "Ref": "AWS::NoValue" }
           ]
         },
-        "MasterUsername": { "Ref": "DbAdminName" },
         "MasterUserPassword": { "Ref": "DbAdminPass" },
+        "MasterUsername": { "Ref": "DbAdminName" },
         "MultiAZ": { "Ref": "DbIsMultiAz" },
         "PreferredBackupWindow": "23:30-00:00",
         "PreferredMaintenanceWindow": "sun:00:30-sun:01:00",
+        "PubliclyAccessible": "false",
         "SnapshotIdentifier": {
           "Fn::If": [
             "UseDbSnapshot",
@@ -179,17 +187,16 @@
             "Value": "Artifactory PgSQL database"
           }
         ],
-        "PubliclyAccessible": "false",
         "VPCSecurityGroups": { "Ref": "DbSecurityGroup" }
       },
       "Type": "AWS::RDS::DBInstance"
     },
     "RDSdbSubnetGroup": {
-      "Type" : "AWS::RDS::DBSubnetGroup",
-      "Properties" : {
-        "DBSubnetGroupDescription" : "Subnets available for the RDS DB Instance",
-        "SubnetIds" : { "Ref" : "DbSubnets" }
-      }
+      "Properties": {
+        "DBSubnetGroupDescription": "Subnets available for the RDS DB Instance",
+        "SubnetIds": { "Ref": "DbSubnets" }
+      },
+      "Type": "AWS::RDS::DBSubnetGroup"
     }
   }
 }
