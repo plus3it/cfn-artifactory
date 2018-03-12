@@ -11,19 +11,37 @@
         { "Fn::Equals": [ { "Ref": "NoPublicIp" }, "true" ] }
       ]
     },
-    "CreateAppVolume": {
-      "Fn::Not": [
-        { "Fn::Equals": [ { "Ref": "AppVolumeDevice" }, "" ] }
-      ]
-    },
-    "CreateBackupVolume": {
-      "Fn::Not": [
-        { "Fn::Equals": [ { "Ref": "BackupVolumeDevice" }, "" ] }
-      ]
-    },
     "HaveAkas": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "AkaList" }, "" ] }
+      ]
+    },
+    "NotGenFive": {
+      "Fn::Not": [
+        {
+          "Fn::Or": [
+            {
+              "Fn::Equals": [
+                { "Fn::Select": [
+                    "0",
+                    { "Fn::Split": [ ".", { "Ref": "InstanceType" } ] }
+                  ]
+                },
+                "c5"
+              ]
+            },
+            {
+              "Fn::Equals": [
+                { "Fn::Select": [
+                    "0",
+                    { "Fn::Split": [ ".", { "Ref": "InstanceType" } ] }
+                  ]
+                },
+                "m5"
+              ]
+            }
+          ]
+        }
       ]
     },
     "Reboot": {
@@ -46,6 +64,11 @@
         { "Fn::Equals": [ { "Ref": "WatchmakerEnvironment" }, "" ] }
       ]
     },
+    "UsePersistentNetStorage": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "PersistentShareType" }, "" ] }
+      ]
+    },
     "UseWamConfig": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "WatchmakerConfig" }, "" ] }
@@ -54,15 +77,22 @@
   },
   "Description": "This template deploys a STIG-hardened Enterprise Linux 7 instance to host the Artifactory service.",
   "Mappings": {
-    "Distro2RootDevice": {
-      "AmazonLinux": {
-        "DeviceName": "xvda"
+    "InstanceTypeCapabilities": {
+      "IsGenFive": {
+        "ExternDeviceNameRoot": "/dev/sda1",
+        "InternDeviceNameRoot": "/dev/nvme0n1",
+        "ExternDeviceNameApp": "/dev/xvdf",
+        "InternDeviceNameApp": "/dev/nvme1n1",
+        "ExternDeviceNameBkup": "/dev/xvdk",
+        "InternDeviceNameBkup": "/dev/nvme2n1"
       },
-      "CentOS": {
-        "DeviceName": "sda1"
-      },
-      "RedHat": {
-        "DeviceName": "sda1"
+      "PreGenFive": {
+        "ExternDeviceNameRoot": "/dev/sda1",
+        "InternDeviceNameRoot": "/dev/xvda",
+        "ExternDeviceNameApp": "/dev/xvdf",
+        "InternDeviceNameApp": "/dev/xvdf",
+        "ExternDeviceNameBkup": "/dev/xvdk",
+        "InternDeviceNameBkup": "/dev/xvdk"
       }
     }
   },
@@ -155,15 +185,11 @@
     },
     "AppVolumeDevice": {
       "AllowedValues": [
-        "",
-        "/dev/xvdf",
-        "/dev/xvdg",
-        "/dev/xvdh",
-        "/dev/xvdi",
-        "/dev/xvdj"
+        "false",
+        "true"
       ],
-      "Default": "",
-      "Description": "Device to mount an extra EBS volume. Leave blank to launch without an extra application volume",
+      "Default": "false",
+      "Description": "(Vestigial) Whether to use an EBS-based backup-staging location",
       "Type": "String"
     },
     "AppVolumeMountPath": {
@@ -250,15 +276,11 @@
     },
     "BackupVolumeDevice": {
       "AllowedValues": [
-        "",
-        "/dev/xvdk",
-        "/dev/xvdl",
-        "/dev/xvdm",
-        "/dev/xvdn",
-        "/dev/xvdo"
+        "false",
+        "true"
       ],
-      "Default": "",
-      "Description": "Device to mount an backup-staging location. Leave blank to launch without a backup-staging volume",
+      "Default": "false",
+      "Description": "(Vestigial) Whether to use an EBS-based backup-staging location",
       "Type": "String"
     },
     "BackupVolumeMountPath": {
@@ -323,26 +345,37 @@
         "t2.large",
         "t2.xlarge",
         "t2.2xlarge",
-        "m3.medium",
-        "m3.large",
-        "m3.xlarge",
-        "m3.2xlarge",
+        "m5.large",
+        "m5.xlarge",
+        "m5.2xlarge",
+        "m5.4xlarge",
+        "m5.10xlarge",
+        "m5.16xlarge",
         "m4.large",
         "m4.xlarge",
         "m4.2xlarge",
         "m4.4xlarge",
         "m4.10xlarge",
         "m4.16xlarge",
-        "c3.large",
-        "c3.xlarge",
-        "c3.2xlarge",
-        "c3.4xlarge",
-        "c3.8xlarge",
+        "m3.medium",
+        "m3.large",
+        "m3.xlarge",
+        "m3.2xlarge",
+        "c5.large",
+        "c5.xlarge",
+        "c5.2xlarge",
+        "c5.4xlarge",
+        "c5.8xlarge",
         "c4.large",
         "c4.xlarge",
         "c4.2xlarge",
         "c4.4xlarge",
-        "c4.8xlarge"
+        "c4.8xlarge",
+        "c3.large",
+        "c3.xlarge",
+        "c3.2xlarge",
+        "c3.4xlarge",
+        "c3.8xlarge"
       ],
       "Default": "t2.large",
       "Description": "Amazon EC2 instance type",
@@ -422,6 +455,14 @@
       "Default": "pystache",
       "Description": "Name of preferred pystache RPM.",
       "Type": "String"
+    },
+    "RootVolumeSize": {
+      "ConstraintDescription": "Must be between 1GB and 16384GB.",
+      "Default": "20",
+      "Description": "Size in GB of the EBS volume to create. Ignored if \"AppVolumeDevice\" is blank",
+      "MaxValue": "16384",
+      "MinValue": "20",
+      "Type": "Number"
     },
     "S3BackupBucket": {
       "Description": "Name of S3 bucket for dumping backup data to.",
@@ -670,12 +711,25 @@
                       "ARTIFACTORY_S3_BACKUPS=",
                        { "Ref": "S3BackupBucket" },
                        "\n",
-                      "ARTIFACTORY_PERSISTENT_SHARE_PATH=",
-                       { "Ref": "PersistentSharePath" },
-                       "\n",
-                      "ARTIFACTORY_PERSISTENT_SHARE_TYPE=",
-                       { "Ref": "PersistentShareType" },
-                       "\n",
+                      {
+                        "Fn::If": [
+                          "UsePersistentNetStorage",
+                          {
+                            "Fn::Join": [
+                              "",
+                              [
+                                "ARTIFACTORY_PERSISTENT_SHARE_PATH=",
+                                 { "Ref": "PersistentSharePath" },
+                                 "\n",
+                                "ARTIFACTORY_PERSISTENT_SHARE_TYPE=",
+                                 { "Ref": "PersistentShareType" },
+                                 "\n"
+                              ]
+                            ]
+                          },
+                          ""
+                        ]
+                      },
                       "ARTIFACTORY_PROXY_HOST=",
                        { "Ref": "ProxyHostname" },
                        "\n",
@@ -938,35 +992,72 @@
             "DeviceName": "/dev/sda1",
             "Ebs": {
               "DeleteOnTermination": "true",
+              "VolumeSize" : { "Ref" : "RootVolumeSize" },
               "VolumeType": "gp2"
             }
           },
           {
             "Fn::If": [
-              "CreateAppVolume",
+              "UsePersistentNetStorage",
+              { "Ref" : "AWS::NoValue" },
               {
-                "DeviceName": { "Ref" : "AppVolumeDevice" },
+                "DeviceName": {
+                  "Fn::If": [
+                    "NotGenFive",
+                    {
+                      "Fn::FindInMap": [
+                        "InstanceTypeCapabilities",
+                        "PreGenFive",
+                        "ExternDeviceNameApp"
+                      ]
+                    },
+                    {
+                      "Fn::FindInMap": [
+                        "InstanceTypeCapabilities",
+                        "IsGenFive",
+                        "ExternDeviceNameApp"
+                      ]
+                    }
+                  ]
+                },
                 "Ebs": {
                   "VolumeSize" : { "Ref" : "AppVolumeSize" },
                   "VolumeType" : { "Ref" : "AppVolumeType" },
                   "DeleteOnTermination" : "true"
                 }
-              },
-              { "Ref" : "AWS::NoValue" }
+              }
             ]
           },
           {
             "Fn::If": [
-              "CreateAppVolume",
+              "UsePersistentNetStorage",
+              { "Ref" : "AWS::NoValue" },
               {
-                "DeviceName": { "Ref" : "BackupVolumeDevice" },
+                "DeviceName": {
+                  "Fn::If": [
+                    "NotGenFive",
+                    {
+                      "Fn::FindInMap": [
+                        "InstanceTypeCapabilities",
+                        "PreGenFive",
+                        "ExternDeviceNameBkup"
+                      ]
+                    },
+                    {
+                      "Fn::FindInMap": [
+                        "InstanceTypeCapabilities",
+                        "IsGenFive",
+                        "ExternDeviceNameBkup"
+                      ]
+                    }
+                  ]
+                },
                 "Ebs": {
                   "VolumeSize" : { "Ref" : "BackupVolumeSize" },
                   "VolumeType" : { "Ref" : "BackupVolumeType" },
                   "DeleteOnTermination" : "true"
                 }
-              },
-              { "Ref" : "AWS::NoValue" }
+              }
             ]
           }
         ],
@@ -1031,23 +1122,83 @@
                 "\n",
                 "bootcmd:\n",
                 "  - cloud-init-per instance mkfs-appvolume mkfs -t ext4 ",
-                { "Ref": "AppVolumeDevice" },
+                {
+                  "Fn::If": [
+                    "NotGenFive",
+                    {
+                      "Fn::FindInMap": [
+                        "InstanceTypeCapabilities",
+                        "PreGenFive",
+                        "InternDeviceNameApp"
+                      ]
+                    },
+                    {
+                      "Fn::FindInMap": [
+                        "InstanceTypeCapabilities",
+                        "IsGenFive",
+                        "InternDeviceNameApp"
+                      ]
+                    }
+                  ]
+                },
                 "\n",
                 "  - cloud-init-per instance mkfs-bkupvolume mkfs -t ext4 ",
-                { "Ref": "BackupVolumeDevice" },
+                {
+                  "Fn::If": [
+                    "NotGenFive",
+                    {
+                      "Fn::FindInMap": [
+                        "InstanceTypeCapabilities",
+                        "PreGenFive",
+                        "InternDeviceNameBkup"
+                      ]
+                    },
+                    {
+                      "Fn::FindInMap": [
+                        "InstanceTypeCapabilities",
+                        "IsGenFive",
+                        "InternDeviceNameBkup"
+                      ]
+                    }
+                  ]
+                },
                 "\n",
+                "\n",
+                "growpart:\n",
+                "  mode: auto\n",
+                "  devices: [ '/dev/xvda2', '/dev/nvme0n1p2' ]\n",
+                "  ignore_growroot_disabled: false\n",
                 "\n",
                 "mounts:\n",
                 {
                   "Fn::If": [
-                    "CreateAppVolume",
+                    "UsePersistentNetStorage",
+                    "",
                     {
                       "Fn::Join": [
                         "",
                         [
                           "  - [ ",
                           "\"",
-                          { "Ref": "AppVolumeDevice" },
+                          {
+                            "Fn::If": [
+                              "NotGenFive",
+                              {
+                                "Fn::FindInMap": [
+                                  "InstanceTypeCapabilities",
+                                  "PreGenFive",
+                                  "InternDeviceNameApp"
+                                ]
+                              },
+                              {
+                                "Fn::FindInMap": [
+                                  "InstanceTypeCapabilities",
+                                  "IsGenFive",
+                                  "InternDeviceNameApp"
+                                ]
+                              }
+                            ]
+                          },
                           "\", ",
                           "\"",
                           { "Ref": "AppVolumeMountPath" },
@@ -1056,20 +1207,38 @@
                           "]\n"
                         ]
                       ]
-                    },
-                    ""
+                    }
                   ]
                 },
                 {
                   "Fn::If": [
-                    "CreateBackupVolume",
+                    "UsePersistentNetStorage",
+                    "",
                     {
                       "Fn::Join": [
                         "",
                         [
                           "  - [ ",
                           "\"",
-                          { "Ref": "BackupVolumeDevice" },
+                          {
+                            "Fn::If": [
+                              "NotGenFive",
+                              {
+                                "Fn::FindInMap": [
+                                  "InstanceTypeCapabilities",
+                                  "PreGenFive",
+                                  "InternDeviceNameBkup"
+                                ]
+                              },
+                              {
+                                "Fn::FindInMap": [
+                                  "InstanceTypeCapabilities",
+                                  "IsGenFive",
+                                  "InternDeviceNameBkup"
+                                ]
+                              }
+                            ]
+                          },
                           "\", ",
                           "\"",
                           { "Ref": "BackupVolumeMountPath" },
@@ -1078,8 +1247,7 @@
                           "]\n"
                         ]
                       ]
-                    },
-                    ""
+                    }
                   ]
                 },
                 "\n",
