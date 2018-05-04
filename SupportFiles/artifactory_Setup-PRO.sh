@@ -74,7 +74,7 @@ function SelMods {
       setsebool -P httpd_use_nfs 1 && echo "Success" || \
         err_exit "Failed setting httpd/NFS SEL-boolean"
 
-      print "Alow httpd rw access to ${1}... "
+      printf "Alow httpd rw access to %s... " "${1}"
       semanage fcontext -a -t "httpd_sys_rw_content_t" "${1}(/.*)?" && \
         echo "Success" || err_exit "Unable to give httpd rw access to ${1}"
    fi
