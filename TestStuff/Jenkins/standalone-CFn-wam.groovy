@@ -40,6 +40,7 @@ pipeline {
         string(name: 'PypiIndexUrl', defaultValue: 'https://pypi.org/simple', description: 'URL to the PyPi Index')
         string(name: 'CfnBootstrapUtilsUrl', defaultValue: 'https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz', description: 'URL to aws-cfn-bootstrap-latest.tar.gz')
         string(name: 'WatchmakerEnvironment', defaultValue: 'dev', description: 'Environment in which the instance is being deployed')
+        string(name: 'WatchmakerComputerName', defaultValue: 'host0.localdomain', description: 'Hostname to assign to node')
         string(name: 'ToggleCfnInitUpdate', description: 'Arbitrary value that forces and instance to be updated')
         string(name: 'AppScriptParams', defaultValue: '', description: 'Parameters to pass to application-script')
     }
@@ -101,6 +102,10 @@ pipeline {
                             {
                                 "ParameterKey": "WatchmakerEnvironment",
                                 "ParameterValue": "${WatchmakerEnvironment}"
+                            },
+                            {
+                                "ParameterKey": "WatchmakerComputerName",
+                                "ParameterValue": "${WatchmakerComputerName}"
                             },
                             {
                                 "ParameterKey": "ToggleCfnInitUpdate",
