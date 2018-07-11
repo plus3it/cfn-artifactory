@@ -270,6 +270,18 @@
       "Description": "Type of EBS volume to create. Ignored if \"AppVolumeDevice\" is false",
       "Type": "String"
     },
+    "ArtifactoryRepoUrl":{
+      "AllowedPattern": "^http[s]?://.*|^$",
+      "Default": "https://jfrog.bintray.com/artifactory-pro-rpms",
+      "Description": "URL/location of the repository definition-file that configures Artifactory RPM download capability.",
+      "Type": "String"
+    },
+    "ArtifactoryRpmName":{
+      "AllowedPattern": "^jfrog-artifactory-pro.*$|^$",
+      "Default": "jfrog-artifactory-pro",
+      "Description": "Name of the Artifactory installation-RPM. Include release version if 'other-than-latest' is desired. Example values would be: jfrog-artifactory-pro, jfrog-artifactory-pro-X.Y.Z",
+      "Type": "String"
+    },
     "CfnBootstrapUtilsUrl": {
       "AllowedPattern": "^http[s]?://.*\\.tar\\.gz$",
       "Default": "https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
@@ -821,6 +833,24 @@
                 "mode": "000400",
                 "owner": "root"
               },
+              "/etc/cfn/Artifactory.envs": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "ARTIFACTORY_REPO_URL=",
+                       { "Ref": "ArtifactoryRepoUrl" },
+                       "\n",
+                      "ARTIFACTORY_RPM_NAME=",
+                       { "Ref": "ArtifactoryRpmName" },
+                       "\n"
+                    ]
+                  ]
+                },
+                "group": "root",
+                "mode": "000400",
+                "owner": "root"
+              },
               "/etc/cfn/scripts/watchmaker-install.sh": {
                 "content": {
                   "Fn::Join": [
@@ -840,6 +870,26 @@
                       "pip install",
                       " --index-url=\"$PYPI_URL\"",
                       " --upgrade watchmaker\n\n"
+                    ]
+                  ]
+                },
+                "group": "root",
+                "mode": "000700",
+                "owner": "root"
+              },
+              "/etc/yum.repos.d/artifactory.repo": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "[artifactory-pro]\n",
+                      "name = Artifactory RPM Repository\n",
+                      "baseurl = ",
+                      { "Ref": "ArtifactoryRepoUrl" },
+                      "\n",
+                      "enabled = 1\n",
+                      "skip_if_unavailable = 1\n",
+                      "gpgcheck = 0\n"
                     ]
                   ]
                 },
