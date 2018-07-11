@@ -270,6 +270,33 @@
       "Description": "Type of EBS volume to create. Ignored if \"AppVolumeDevice\" is false",
       "Type": "String"
     },
+    "ArtifactoryAppHome": {
+      "AllowedPattern": "^/.*$|^$",
+      "Default": "",
+      "Type": "String"
+    },
+    "ArtifactoryClusterHome": {
+      "AllowedPattern": "^/.*$|^$",
+      "Default": "",
+      "Type": "String"
+    },
+    "ArtifactoryDbHostFqdn": {
+      "Default": "",
+      "Type": "String"
+    },
+    "ArtifactoryDbInstance": {
+      "Default": "",
+      "Type": "String"
+    },
+    "ArtifactoryDbAdminUser": {
+      "Default": "",
+      "Type": "String"
+    },
+    "ArtifactoryDbAdminPasswd": {
+      "Default": "",
+      "NoEcho": "true",
+      "Type": "String"
+    },
     "ArtifactoryRepoUrl":{
       "AllowedPattern": "^http[s]?://.*|^$",
       "Default": "https://jfrog.bintray.com/artifactory-pro-rpms",
@@ -280,6 +307,14 @@
       "AllowedPattern": "^jfrog-artifactory-pro.*$|^$",
       "Default": "jfrog-artifactory-pro",
       "Description": "Name of the Artifactory installation-RPM. Include release version if 'other-than-latest' is desired. Example values would be: jfrog-artifactory-pro, jfrog-artifactory-pro-X.Y.Z",
+      "Type": "String"
+    },
+    "ArtifactoryS3BakupLocs": {
+      "Default": "",
+      "Type": "String"
+    },
+    "ArtifactoryS3ShardLocs": {
+      "Default": "",
       "Type": "String"
     },
     "CfnBootstrapUtilsUrl": {
@@ -843,6 +878,30 @@
                        "\n",
                       "ARTIFACTORY_RPM_NAME=",
                        { "Ref": "ArtifactoryRpmName" },
+                       "\n",
+                      "ARTIFACTORY_APP_HOME=",
+                       { "Ref": "ArtifactoryAppHome" },
+                       "\n",
+                      "ARTIFACTORY_CLUSTER_HOME=",
+                       { "Ref": "ArtifactoryClusterHome" },
+                       "\n",
+                      "ARTIFACTORY_DB_HOSTFQDN=",
+                       { "Ref": "ArtifactoryDbHostFqdn" },
+                       "\n",
+                      "ARTIFACTORY_DB_INSTANCe=",
+                       { "Ref": "ArtifactoryDbInstance" },
+                       "\n",
+                      "ARTIFACTORY_DB_ADMIN=",
+                       { "Ref": "ArtifactoryDbAdminUser" },
+                       "\n",
+                      "ARTIFACTORY_DB_PASSWD=",
+                       { "Ref": "ArtifactoryDbAdminPasswd" },
+                       "\n",
+                      "ARTIFACTORY_S3_BAKUP_LOCS=",
+                       { "Ref": "ArtifactoryS3BakupLocs" },
+                       "\n",
+                      "ARTIFACTORY_S3_SHARD_LOCS=",
+                       { "Ref": "ArtifactoryS3ShardLocs" },
                        "\n"
                     ]
                   ]
