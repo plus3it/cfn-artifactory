@@ -136,35 +136,16 @@
           "Parameters": [
             "AmiId",
             "InstanceType",
-            "InstanceRoleName",
+            "RootVolumeSize",
             "KeyPairName",
+            "SubnetId",
+            "PrivateIp",
             "NoPublicIp",
+            "SecurityGroupIds",
+            "InstanceRoleName",
+            "InstanceRoleProfile",
             "NoReboot",
-            "NoUpdates",
-            "SecurityGroupIds"
-          ]
-        },
-        {
-          "Label": {
-            "default": "EC2 Watchmaker Configuration"
-          },
-          "Parameters": [
-            "PypiIndexUrl",
-            "WatchmakerConfig",
-            "WatchmakerEnvironment",
-            "WatchmakerOuPath",
-            "WatchmakerComputerName",
-            "WatchmakerAdminGroups",
-            "WatchmakerAdminUsers"
-          ]
-        },
-        {
-          "Label": {
-            "default": "EC2 Application Configuration"
-          },
-          "Parameters": [
-            "AppScriptUrl",
-            "AppScriptParams"
+            "NoUpdates"
           ]
         },
         {
@@ -180,22 +161,46 @@
         },
         {
           "Label": {
-            "default": "Network Configuration"
+            "default": "Artifactory Configuration Parameters"
           },
           "Parameters": [
-            "PrivateIp",
-            "SubnetId"
+            "AppScriptUrl",
+            "AppScriptParams",
+            "ArtifactoryRepoUrl",
+            "ArtifactoryRpmName",
+            "ArtifactoryAppHome",
+            "ArtifactoryClusterHome",
+            "ArtifactoryDbHostFqdn",
+            "ArtifactoryDbInstance",
+            "ArtifactoryDbAdminUser",
+            "ArtifactoryDbAdminPasswd",
+            "ArtifactoryS3BakupLocs",
+            "ArtifactoryS3ShardLocs"
           ]
         },
         {
           "Label": {
-            "default": "CloudFormation Configuration"
+            "default": "CFn-Utils Setup and Use"
           },
           "Parameters": [
             "CfnGetPipUrl",
             "CfnBootstrapUtilsUrl",
             "CloudWatchAgentUrl",
             "ToggleCfnInitUpdate"
+          ]
+        },
+        {
+          "Label": {
+            "default": "EC2 Watchmaker Configuration"
+          },
+          "Parameters": [
+            "PypiIndexUrl",
+            "WatchmakerComputerName",
+            "WatchmakerEnvironment",
+            "WatchmakerConfig",
+            "WatchmakerOuPath",
+            "WatchmakerAdminGroups",
+            "WatchmakerAdminUsers"
           ]
         }
       ],
@@ -273,27 +278,33 @@
     "ArtifactoryAppHome": {
       "AllowedPattern": "^/.*$|^$",
       "Default": "",
+      "Description": "Root-location of Artifactory's non-shared components",
       "Type": "String"
     },
     "ArtifactoryClusterHome": {
       "AllowedPattern": "^/.*$|^$",
       "Default": "",
+      "Description": "Root-location of Artifactory's cluster-shared components",
       "Type": "String"
     },
     "ArtifactoryDbHostFqdn": {
       "Default": "",
+      "Description": "Fully-qualified domain name of the (externalized) Artifactory configuration database-host/cluster",
       "Type": "String"
     },
     "ArtifactoryDbInstance": {
       "Default": "",
+      "Description": "Instance-name of the Artifactory configuration database",
       "Type": "String"
     },
     "ArtifactoryDbAdminUser": {
       "Default": "",
+      "Description": "Name of the Artifactory configuration database's privileged user account",
       "Type": "String"
     },
     "ArtifactoryDbAdminPasswd": {
       "Default": "",
+      "Description": "Password for the Artifactory configuration database's privileged user account",
       "NoEcho": "true",
       "Type": "String"
     },
@@ -311,10 +322,12 @@
     },
     "ArtifactoryS3BakupLocs": {
       "Default": "",
+      "Description": "Name of the S3 bucket used as destination for automated backups.",
       "Type": "String"
     },
     "ArtifactoryS3ShardLocs": {
       "Default": "",
+      "Description": "Name of the S3 bucket(s) used as destination for sharded artifact storage (use a colon-delimited list if more than one bucket will be used)",
       "Type": "String"
     },
     "CfnBootstrapUtilsUrl": {
@@ -410,7 +423,7 @@
     "RootVolumeSize": {
       "ConstraintDescription": "Must be between 20GB and 16384GB.",
       "Default": "20",
-      "Description": "Size in GB of the EBS volume to create. Ignored if \"AppVolumeDevice\" is blank",
+      "Description": "Size in GB of the EBS volume to create. If smaller than AMI defaul, create operation will fail; If larger, root device-volume's partition size will be increased",
       "MaxValue": "16384",
       "MinValue": "20",
       "Type": "Number"
@@ -953,7 +966,7 @@
                   ]
                 },
                 "group": "root",
-                "mode": "000700",
+                "mode": "000644",
                 "owner": "root"
               }
             },
