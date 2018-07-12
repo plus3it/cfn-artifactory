@@ -282,9 +282,9 @@
       "Type": "String"
     },
     "ArtifactoryClusterHome": {
-      "AllowedPattern": "^/.*$|^$",
+      "AllowedPattern": "^[a-z][a-z0-9-.]*$|^$",
       "Default": "",
-      "Description": "Root-location of Artifactory's cluster-shared components",
+      "Description": "FQDN of NFS server hosting Artifactory's cluster-shared components",
       "Type": "String"
     },
     "ArtifactoryDbHostFqdn": {
