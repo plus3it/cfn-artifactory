@@ -213,14 +213,34 @@
     "Version": "1.4.3"
   },
   "Outputs": {
-    "InstanceId": {
-      "Description": "Instance ID",
-      "Value": { "Ref": "ArtifactoryHost" }
-    },
     "ArtifactoryHostLogGroupName": {
       "Condition": "InstallCloudWatchAgent",
       "Description": "Log Group Name",
+      "Export": {
+        "Name": { "Fn::Sub": "${AWS::StackName}-InstanceLogGroup" }
+      },
       "Value": { "Ref": "ArtifactoryLogGroup" }
+    },
+    "InstanceId": {
+      "Description": "Instance ID",
+      "Export": {
+        "Name": { "Fn::Sub": "${AWS::StackName}-InstanceId" }
+      },
+      "Value": { "Ref": "ArtifactoryHost" }
+    },
+    "InstanceAz": {
+      "Description": "Availability-zone of launched instance",
+      "Export": {
+        "Name": { "Fn::Sub": "${AWS::StackName}-InstanceAz" }
+      },
+      "Value": { "Fn::GetAtt": [ "ArtifactoryHost", "AvailabilityZone" ] }
+    },
+    "InstancePrivateIPv4": {
+      "Description": "Private IP address of launched instance",
+      "Export": {
+        "Name": { "Fn::Sub": "${AWS::StackName}-InstancePrivateIPv4" }
+      },
+      "Value": { "Fn::GetAtt": [ "ArtifactoryHost", "PrivateIp" ] }
     }
   },
   "Parameters": {
