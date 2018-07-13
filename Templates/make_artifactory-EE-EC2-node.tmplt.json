@@ -307,6 +307,21 @@
       "Description": "FQDN of NFS server hosting Artifactory's cluster-shared components",
       "Type": "String"
     },
+    "ArtifactoryClusterKey": {
+      "AllowedPattern": "^[a-z0-9]{32}$|^$",
+      "Default": "",
+      "Description": "A hexadecimal string used to secure intra-cluster communications (ignored if \"ClusterHome\" is null; use `openssl rand -hex 16` to generate)",
+      "Type": "String"
+    },
+    "ArtifactoryClusterMaster": {
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "false",
+      "Description": "Whether this node is a cluster's master node (ignored if \"ClusterHome\" is null)",
+      "Type": "String"
+    },
     "ArtifactoryDbHostFqdn": {
       "Default": "",
       "Description": "Fully-qualified domain name of the (externalized) Artifactory configuration database-host/cluster",
@@ -917,6 +932,12 @@
                        "\n",
                       "ARTIFACTORY_CLUSTER_HOME=",
                        { "Ref": "ArtifactoryClusterHome" },
+                       "\n",
+                      "ARTIFACTORY_CLUSTER_KEY=",
+                       { "Ref": "ArtifactoryClusterKey" },
+                       "\n",
+                      "ARTIFACTORY_CLUSTER_MASTER=",
+                       { "Ref": "ArtifactoryClusterMaster" },
                        "\n",
                       "ARTIFACTORY_DB_HOSTFQDN=",
                        { "Ref": "ArtifactoryDbHostFqdn" },

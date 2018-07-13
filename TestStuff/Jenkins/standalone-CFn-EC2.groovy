@@ -42,6 +42,8 @@ pipeline {
         string(name: 'AppVolumeType', description: 'Type of EBS volume to create. Ignored if "AppVolumeDevice" is false')
         string(name: 'ArtifactoryAppHome', description: 'Root-location of non-shared Artifactory components')
         string(name: 'ArtifactoryClusterHome', description: 'Root-location of cluster-shared Artifactory components')
+        string(name: 'ArtifactoryClusterKey', description: 'A hexadecimal string used to secure intra-cluster communications (ignored if "ClusterHome" is null; use `openssl rand -hex 16` to generate)')
+        string(name: 'ArtifactoryClusterMaster', description: 'Whether this node is a cluster master-node (ignored if "ClusterHome" is null)')
         string(name: 'ArtifactoryDbHostFqdn', description: 'Fully-qualified domain name of the (externalized) Artifactory configuration database-host/cluster')
         string(name: 'ArtifactoryDbInstance', description: 'Instance-name of the Artifactory configuration database')
         string(name: 'ArtifactoryDbAdminUser', description: 'Name of the privileged user account used to connect to the Artifactory configuration database')
@@ -115,6 +117,14 @@ pipeline {
                             {
                                 "ParameterKey": "ArtifactoryClusterHome",
                                 "ParameterValue": "${env.ArtifactoryClusterHome}"
+                            },
+                            {
+                                "ParameterKey":  "ArtifactoryClusterKey",
+                                "ParameterValue":  "${env.ArtifactoryClusterKey}"
+                            },
+                            {
+                                "ParameterKey":  "ArtifactoryClusterMaster",
+                                "ParameterValue":  "${env.ArtifactoryClusterMaster}"
                             },
                             {
                                 "ParameterKey": "ArtifactoryDbAdminPasswd",
