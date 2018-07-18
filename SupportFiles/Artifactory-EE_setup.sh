@@ -9,7 +9,6 @@
 #
 #################################################################
 PROGNAME=$(basename "${0}")
-CHKFIPS=/proc/sys/crypto/fips_enabled
 # shellcheck disable=SC1091
 source /etc/cfn/Artifactory.envs
 TOOL_BUCKET="${ARTIFACTORY_TOOL_BUCKET}"
@@ -213,42 +212,92 @@ mount -a nfs && echo "Success" || err_exit "Failed mounting ${AFCLHOME}"
 ######################################################
 ## "Rough-sketch" of further procedures to automate ##
 ######################################################
-aws s3 sync "s3://${TOOL_BUCKET}/Licenses/" /etc/cfn/files/
 
-yum install -y centos-release-scl\* jfrog-artifactory-pro
+# Download license files
+printf "Downloading license files... "
+aws s3 sync "s3://${TOOL_BUCKET}/Licenses/" /etc/cfn/files/ && \
+  echo "Success" || err_exit "Failed downloading license files"
 
-yum install -y rh-postgresql96
-
+# Good news/bad news:
+# * Artifactory 6.x now comes with systemd unit-files
+# * Artifactory's systemd unit-files need massaging...
 if [[ $( grep -q START_TMO /usr/lib/systemd/system/artifactory.service )$? -eq 0 ]]
 then
    echo "Delayed starte-timeout already present"
 else
-   sed -i '/\[Service]/s/$/\nEnvironment=START_TMO=120/' /usr/lib/systemd/system/artifactory.service &&
-     systemctl daemon-reload
+   printf "Slackening systemd's start-timeout... "
+   sed -i '/\[Service]/s/$/\nEnvironment=START_TMO=120/' \
+     /usr/lib/systemd/system/artifactory.service && echo "Success" || \
+       err_exit "Failed to update systemd unit file"
+
+   printf "Reloading systemd service definitions... "
+   systemctl daemon-reload && echo "Success" || echo "Failed"
 fi
 
 
-install -b -m 000644 -o artifactory -g artifactory <( cat /etc/cfn/files/ArtifactoryEE_* ) /var/opt/jfrog/artifactory/etc/artifactory.lic
+# Staging license files - only critical on first node but easier to
+# just do "everywhere": Artifactory ignores redundant license files
+printf "Staging license files... "
+install -b -m 000644 -o artifactory -g artifactory \
+  <( cat /etc/cfn/files/ArtifactoryEE_* ) "${AFSAHOME}/etc/artifactory.lic" && \
+  echo "Success" || err_exit "Failed staging license files"
 
-install -b -m 000644 -o artifactory -g artifactory /etc/cfn/files/db.properties /var/opt/jfrog/artifactory/etc/db.properties
+# Install pre-staged database connector definition
+printf "Setting up DB connection... "
+install -b -m 000644 -o artifactory -g artifactory \
+  /etc/cfn/files/db.properties "${AFSAHOME}/etc/db.properties" \
+    && echo "Success" || err_exit "Failed configuring DB connection"
 
-ln -s "$( rpm -ql postgresql-jdbc | grep jdbc.jar )" /var/opt/jfrog/artifactory/tomcat/lib/
+# Ensure Tomcat can find JDBC library
+printf "Ensure Tomcat can find JDBC connector... "
+ln -s "$( rpm -ql postgresql-jdbc | grep jdbc.jar )" \
+  "${AFSAHOME}/tomcat/lib" && echo "Success" ||  \
+    err_exit "Failed linking JDBC lib"
 
-install -d -m 0750 -o artifactory -g artifactory /var/opt/jfrog/artifactory/etc/security
+# Cluster-comms require a secure directory to store authorization key
+if [[ -d ${AFSAHOME}/etc/security ]]
+then
+   echo "Security-key directory already exists"
+else
+   printf "Ensure security-key directory exists... "
+   install -d -m 0750 -o artifactory -g artifactory \
+     "${AFSAHOME}/etc/security" && echo "Success" || \
+       err_exit "Failed creating security-key directory"
 
-chcon --reference /var/opt/jfrog/artifactory/etc/ /var/opt/jfrog/artifactory/etc/security
+   # Fix SEL label
+   chcon --reference "${AFSAHOME}/etc" "${AFSAHOME}/etc/security"
+fi
 
-install -b -m 000640 <( awk -F= '/CLUSTER_KEY/{print $2}' /etc/cfn/Artifactory.envs ) -o artifactory -g artifactory /var/opt/jfrog/artifactory/etc/security/master.key
+# Cluster-commes require a pre-shared authorization-key to
+# enforce cluster membership
+printf "Installing cluster-key file... "
+install -b -m 000640 \
+  <( awk -F= '/CLUSTER_KEY/{print $2}' /etc/cfn/Artifactory.envs ) \
+  -o artifactory \ -g artifactory "${AFSAHOME}/etc/security/master.key" && \
+    echo "Success" || err_exit "Failed to install pre-shared cluster-key"
 
+# Create/install HA node's properties file
+printf "Configuring cluster node's properties... "
 install -b -m 000644 -o artifactory -g artifactory <( 
   echo "node.id=$(hostname -s)"
   echo "context.url=http://$( ip addr show eth0 | awk '/ inet /{print $2}' | sed 's#/.*$#:8081/artifactory#' )"
   echo "membership.port=10001"
   echo "primary=true"
-  echo "artifactory.ha.data.dir=/var/opt/jfrog/artifactory-cluster/data"
-  echo "artifactory.ha.backup.dir=/var/opt/jfrog/artifactory-cluster/backup"
+  echo "artifactory.ha.data.dir=${AFSAHOME}-cluster/data"
+  echo "artifactory.ha.backup.dir=${AFSAHOME}-cluster/backup"
   echo "hazelcast.interface=$( ip addr show eth0 | awk '/ inet /{print $2}' | sed 's#/.*$##' )"
- ) /var/opt/jfrog/artifactory/etc/ha-node.properties
+ ) "${AFSAHOME}/etc/ha-node.properties" && echo "Success" || \
+  err_exit "Failed to set up HA node's properties"
 
-install -d -m 0750 -o artifactory -g artifactory /var/opt/jfrog/artifactory-cluster/{backup,data,cache}/
-
+# Ensure cluster's storage-dirs all exist
+for CLUDIR in ${AFSAHOME}-cluster/{backup,data,cache}
+do
+  if [[ -d ${CLUDIR} ]]
+  then
+     echo "${CLUDIR} already exists"
+  else
+     printf "Attempting to create %s... " "${CLUDIR}"
+     install -d -m 0750 -o artifactory -g artifactory "${CLUDIR}" && \
+       echo "Success" || err_exit "Failed creating ${CLUDIR}"
+  fi
+done
