@@ -233,7 +233,7 @@ fi
 
 install -b -m 000644 -o artifactory -g artifactory <( cat /etc/cfn/files/ArtifactoryEE_* ) /var/opt/jfrog/artifactory/etc/artifactory.lic
 
-install -b -m 000644 -o artifactory -g artifactory <( cat /var/opt/jfrog/artifactory/misc/db/postgresql.properties && awk -F= '/_DB_/{print $2}' /etc/cfn/Artifactory.envs ) /var/opt/jfrog/artifactory/etc/db.properties
+install -b -m 000644 -o artifactory -g artifactory /etc/cfn/files/db.properties /var/opt/jfrog/artifactory/etc/db.properties
 
 ln -s "$( rpm -ql postgresql-jdbc | grep jdbc.jar )" /var/opt/jfrog/artifactory/tomcat/lib/
 
