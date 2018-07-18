@@ -365,6 +365,11 @@
       "Description": "Name of the S3 bucket(s) used as destination for sharded artifact storage (use a colon-delimited list if more than one bucket will be used)",
       "Type": "String"
     },
+    "ArtifactoryToolBucket": {
+      "Default": "",
+      "Description": "Name of the S3 bucket containing installers, licenses, etc.",
+      "Type": "String"
+    },
     "CfnBootstrapUtilsUrl": {
       "AllowedPattern": "^http[s]?://.*\\.tar\\.gz$",
       "Default": "https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz",
@@ -926,6 +931,9 @@
                        "\n",
                       "ARTIFACTORY_RPM_NAME=",
                        { "Ref": "ArtifactoryRpmName" },
+                       "\n",
+                      "ARTIFACTORY_TOOL_BUCKET=",
+                       { "Ref": "ArtifactoryToolBucket" },
                        "\n",
                       "ARTIFACTORY_APP_HOME=",
                        { "Ref": "ArtifactoryAppHome" },
