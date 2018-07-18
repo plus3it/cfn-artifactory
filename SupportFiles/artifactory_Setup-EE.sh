@@ -47,7 +47,7 @@ install -b -m 000644 -o artifactory -g artifactory <( cat /etc/cfn/files/Artifac
 
 install -b -m 000644 -o artifactory -g artifactory <( cat /var/opt/jfrog/artifactory/misc/db/postgresql.properties && awk -F= '/_DB_/{print $2}' /etc/cfn/Artifactory.envs ) /var/opt/jfrog/artifactory/etc/db.properties
 
-ln -s $( rpm -ql postgresql-jdbc | grep jdbc.jar ) /var/opt/jfrog/artifactory/tomcat/lib/
+ln -s "$( rpm -ql postgresql-jdbc | grep jdbc.jar )" /var/opt/jfrog/artifactory/tomcat/lib/
 
 install -d -m 0750 -o artifactory -g artifactory /var/opt/jfrog/artifactory/etc/security
 
@@ -56,13 +56,13 @@ chcon --reference /var/opt/jfrog/artifactory/etc/ /var/opt/jfrog/artifactory/etc
 install -b -m 000640 <( awk -F= '/CLUSTER_KEY/{print $2}' /etc/cfn/Artifactory.envs ) -o artifactory -g artifactory /var/opt/jfrog/artifactory/etc/security/master.key
 
 install -b -m 000644 -o artifactory -g artifactory <( 
-  echo node.id=$(hostname -s)
-  echo context.url=http://$( ip addr show eth0 | awk '/ inet /{print $2}' | sed 's#/.*$#:8081/artifactory#' )
-  echo membership.port=10001
-  echo primary=true
-  echo artifactory.ha.data.dir=/var/opt/jfrog/artifactory-cluster/data
-  echo artifactory.ha.backup.dir=/var/opt/jfrog/artifactory-cluster/backup
-  echo hazelcast.interface=$( ip addr show eth0 | awk '/ inet /{print $2}' | sed 's#/.*$##' )
+  echo "node.id=$(hostname -s)"
+  echo "context.url=http://$( ip addr show eth0 | awk '/ inet /{print $2}' | sed 's#/.*$#:8081/artifactory#' )"
+  echo "membership.port=10001"
+  echo "primary=true"
+  echo "artifactory.ha.data.dir=/var/opt/jfrog/artifactory-cluster/data"
+  echo "artifactory.ha.backup.dir=/var/opt/jfrog/artifactory-cluster/backup"
+  echo "hazelcast.interface=$( ip addr show eth0 | awk '/ inet /{print $2}' | sed 's#/.*$##' )"
  ) /var/opt/jfrog/artifactory/etc/ha-node.properties
 
 install -d -m 0750 -o artifactory -g artifactory /var/opt/jfrog/artifactory-cluster/{backup,data,cache}/

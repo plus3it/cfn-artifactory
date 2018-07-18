@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=
+# shellcheck disable=SC2015
 #
 # Script to:
 # * Ready a watchmaker-hardened EL7 OS for installation of the
