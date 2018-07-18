@@ -280,9 +280,9 @@ fi
 # Cluster-commes require a pre-shared authorization-key to
 # enforce cluster membership
 printf "Installing cluster-key file... "
-install -b -m 000640 \
+install -b -m 000640 -o artifactory -g artifactory \
   <( awk -F= '/CLUSTER_KEY/{print $2}' /etc/cfn/Artifactory.envs ) \
-  -o artifactory \ -g artifactory "${AFSAHOME}/etc/security/master.key" && \
+  "${AFSAHOME}/etc/security/master.key" && \
     echo "Success" || err_exit "Failed to install pre-shared cluster-key"
 
 # Create/install HA node's properties file
