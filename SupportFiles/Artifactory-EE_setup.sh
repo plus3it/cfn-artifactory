@@ -15,7 +15,6 @@ TOOL_BUCKET="${ARTIFACTORY_TOOL_BUCKET}"
 NFSSVR="${ARTIFACTORY_CLUSTER_HOME}"
 AFSAHOME="${ARTIFACTORY_APP_HOME}"
 AFCLHOME="${AFSAHOME}-cluster"
-SHARDS3=(${ARTIFACAORY_S3_SHARD_LOCS//:/ })
 AFPORTS=(
       8081/tcp
       10001/tcp
@@ -288,6 +287,21 @@ install -b -m 000644 -o artifactory -g artifactory <(
   echo "hazelcast.interface=$( ip addr show eth0 | awk '/ inet /{print $2}' | sed 's#/.*$##' )"
  ) "${AFSAHOME}/etc/ha-node.properties" && echo "Success" || \
   err_exit "Failed to set up HA node's properties"
+
+# Preserve existing binarystore.xml file
+if [[ -e ${AFSAHOME}/etc/binarystore.xml ]]
+then
+   printf "Preserving %s... " "${AFSAHOME}/etc/binarystore.xml"
+   mv "${AFSAHOME}/etc/binarystore.xml" \
+     "${AFSAHOME}/etc/binarystore.xml-BAK-$(date '+%Y%m%d%H%M')" && \
+       echo "Success" || echo "Couldn't preserve prior-file"
+fi
+
+# Install tiering binarystore.xml file
+printf "Installing %s..." "${AFSAHOME}/etc/binarystore.xml"
+install -b -m 000644 -o artifactory -g artifactory \
+  /etc/cfn/files/binarystore.xml "${AFSAHOME}/etc" && echo "Success" || \
+    err_exit "Failed to install ${AFSAHOME}/etc/binarystore.xml"
 
 # Ensure cluster's storage-dirs all exist
 for CLUDIR in ${AFSAHOME}-cluster/{backup,data,cache}
