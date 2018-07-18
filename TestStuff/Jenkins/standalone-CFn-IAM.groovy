@@ -45,15 +45,15 @@ pipeline {
                          [
                              {
                                  "ParameterKey": "BackupBucketArn",
-                                 "ParameterValue": "${BackupBucketArn}"
+                                 "ParameterValue": "${env.BackupBucketArn}"
                              },
                              {
                                  "ParameterKey": "RolePrefix",
-                                 "ParameterValue": "${RolePrefix}"
+                                 "ParameterValue": "${env.RolePrefix}"
                              },
                              {
                                  "ParameterKey": "ServiceTld",
-                                 "ParameterValue": "${ServiceTld}"
+                                 "ParameterValue": "${env.ServiceTld}"
                              }
                          ]
                    /

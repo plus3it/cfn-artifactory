@@ -45,15 +45,15 @@ pipeline {
                          [
                              {
                                  "ParameterKey": "EfsSg",
-                                 "ParameterValue": "${EfsSg}"
+                                 "ParameterValue": "${env.EfsSg}"
                              },
                              {
                                  "ParameterKey": "EfsSubnet",
-                                 "ParameterValue": "${EfsSubnet}"
+                                 "ParameterValue": "${env.EfsSubnet}"
                              },
                              {
                                  "ParameterKey": "ServiceTld",
-                                 "ParameterValue": "${ServiceTld}"
+                                 "ParameterValue": "${env.ServiceTld}"
                              }
                          ]
                    /

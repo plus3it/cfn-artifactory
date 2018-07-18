@@ -48,27 +48,27 @@ pipeline {
                          [
                              {
                                  "ParameterKey": "BackupBucket",
-                                 "ParameterValue": "${BackupBucket}"
+                                 "ParameterValue": "${env.BackupBucket}"
                              },
                              {
                                 "ParameterKey": "BucketInventoryTracking",
-                                 "ParameterValue": "${BucketInventoryTracking}"
+                                 "ParameterValue": "${env.BucketInventoryTracking}"
                              },
                              {
                                  "ParameterKey": "FinalExpirationDays",
-                                 "ParameterValue": "${FinalExpirationDays}"
+                                 "ParameterValue": "${env.FinalExpirationDays}"
                              },
                              {
                                  "ParameterKey": "ReportingBucket",
-                                 "ParameterValue": "${ReportingBucket}"
+                                 "ParameterValue": "${env.ReportingBucket}"
                              },
                              {
                                  "ParameterKey": "RetainIncompleteDays",
-                                 "ParameterValue": "${RetainIncompleteDays}"
+                                 "ParameterValue": "${env.RetainIncompleteDays}"
                              },
                              {
                                  "ParameterKey": "TierToS3Days",
-                                 "ParameterValue": "${TierToS3Days}"
+                                 "ParameterValue": "${env.TierToS3Days}"
                              }
                          ]
                    /
