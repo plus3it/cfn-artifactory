@@ -12,7 +12,7 @@ PROGNAME=$(basename "${0}")
 CHKFIPS=/proc/sys/crypto/fips_enabled
 # shellcheck disable=SC1091
 source /etc/cfn/Artifactory.envs
-TOOL_BUCKET="${ARTIFACTORY_PROV_BUCKET}"
+TOOL_BUCKET="${ARTIFACTORY_TOOL_BUCKET}"
 NFSSVR="${ARTIFACTORY_CLUSTER_HOME}"
 AFSAHOME="${ARTIFACTORY_APP_HOME}"
 AFCLHOME="${AFSAHOME}-cluster"
