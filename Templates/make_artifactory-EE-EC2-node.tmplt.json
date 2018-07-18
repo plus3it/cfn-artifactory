@@ -76,6 +76,11 @@
         { "Fn::Equals": [ { "Ref": "WatchmakerOuPath" }, "" ] }
       ]
     },
+    "UseToolBucket": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "ArtifactoryToolBucket" }, "" ] }
+      ]
+    },
     "UseWamConfig": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "WatchmakerConfig" }, "" ] }
@@ -553,6 +558,13 @@
                   { "Ref": "AWS::NoValue" }
                 ]
               },
+              {
+                "Fn::If": [
+                  "UseToolBucket",
+                  "run-installer",
+                  { "Ref": "AWS::NoValue" }
+                ]
+              },
               "finalize",
               {
                 "Fn::If": [
@@ -814,6 +826,34 @@
             "commands": {
               "10-reboot": {
                 "command": "shutdown -r +1 &"
+              }
+            }
+          },
+          "run-installer": {
+            "commands": {
+              "1-invoke-installer": {
+                "command": "bash -xe /etc/cfn/scripts/ArtifactoryEE-installer.sh"
+              }
+            },
+            "files": {
+              "/etc/cfn/scripts/ArtifactoryEE-installer.sh": {
+                "source": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "https://s3.",
+                      { "Ref": "AWS::Region" },
+                      ".",
+                      { "Ref": "AWS::URLSuffix" },
+                      "/",
+                      { "Ref": "ArtifactoryToolBucket" },
+                      "/SupportFiles/artifactory-EE_setup.sh"
+                    ]
+                  ]
+                },
+                "group": "root",
+                "mode": "000755",
+                "owner": "root"
               }
             }
           },
