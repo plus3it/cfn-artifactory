@@ -1076,6 +1076,31 @@
                 "group": "root",
                 "mode": "000644",
                 "owner": "root"
+              },
+              "/etc/cfn/files/db.properties": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "type=postgresql\n",
+                      "driver=org.postgresql.Driver\n",
+                      "url=jdbc:postgresql://",
+                        { "Ref": "ArtifactoryDbHostFqdn" },
+                        ":5432/",
+                        { "Ref": "ArtifactoryDbInstance" },
+                        "\n",
+                      "username=",
+                        { "Ref": "ArtifactoryDbAdminUser" },
+                        "\n",
+                      "password=",
+                        { "Ref": "ArtifactoryDbAdminPasswd" },
+                        "\n"
+                    ]
+                  ]
+                },
+                "group": "root",
+                "mode": "000644",
+                "owner": "root"
               }
             },
             "services": {
