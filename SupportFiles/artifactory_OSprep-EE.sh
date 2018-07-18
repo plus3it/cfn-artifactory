@@ -213,10 +213,7 @@ mount -a nfs && echo "Success" || err_exit "Failed mounting ${AFCLHOME}"
 ######################################################
 ## "Rough-sketch" of further procedures to automate ##
 ######################################################
-aws s3 cp s3://<TOOL_BUCKET>/SupportFiles/app-config.sh /etc/cfn/scripts/
-aws s3 cp s3://<TOOL_BUCKET>/SupportFiles/artifactory-EE_setup.sh /etc/cfn/scripts/
-
-aws s3 sync s3://<TOOL_BUCKET>/Licenses/ /etc/cfn/files/
+aws s3 sync "s3://${TOOL_BUCKET}/Licenses/" /etc/cfn/files/
 
 yum install -y centos-release-scl\* jfrog-artifactory-pro
 
