@@ -52,6 +52,7 @@ pipeline {
         string(name: 'ArtifactoryRpmName', defaultValue: 'jfrog-artifactory-pro', description: 'Name of the Artifactory installation-RPM. Include release version if "other-than-latest" is desired. Example values would be: jfrog-artifactory-pro, jfrog-artifactory-pro-X.Y.Z')
         string(name: 'ArtifactoryS3BakupLocs', description: 'Name of the S3 bucket used as destination for automated backups')
         string(name: 'ArtifactoryS3ShardLocs', description: 'Name of the S3 bucket(s) used as destination for sharded artifact storage (use a colon-delimited list if more than one bucket will be used')
+        string(name: 'ArtifactoryToolBucket', description: 'S3 bucket containing install tools, licenses, etc.')
         string(name: 'CfnBootstrapUtilsUrl', defaultValue: 'https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz', description: 'URL to aws-cfn-bootstrap-latest.tar.gz')
         string(name: 'CfnGetPipUrl', defaultValue: 'https://bootstrap.pypa.io/2.6/get-pip.py', description: 'URL from which to fetch "URL to get-pip.py" utility')
         string(name: 'CloudWatchAgentUrl', defaultValue: 's3://amazoncloudwatch-agent/linux/amd64/latest/AmazonCloudWatchAgent.zip', description: 'S3 URL to CloudWatch Agent installer')
@@ -157,6 +158,10 @@ pipeline {
                             {
                                 "ParameterKey": "ArtifactoryS3ShardLocs",
                                 "ParameterValue": "${env.ArtifactoryS3ShardLocs}"
+                            },
+                            {
+                                "ParameterKey": "ArtifactoryToolBucket",
+                                "ParameterValue": "${env.ArtifactoryToolBucket}"
                             },
                             {
                                 "ParameterKey": "CfnBootstrapUtilsUrl",
