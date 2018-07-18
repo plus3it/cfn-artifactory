@@ -217,6 +217,16 @@ printf "Downloading license files... "
 aws s3 sync "s3://${TOOL_BUCKET}/Licenses/" /etc/cfn/files/ && \
   echo "Success" || err_exit "Failed downloading license files"
 
+# Install the Artifactory RPM
+if [[ $( rpm -q "${ARTIFACTORY_RPM_NAME}" )$? -eq 0 ]]
+then
+   echo "Artifactory RPM already installed"
+else
+   printf "Installing %s... " "${ARTIFACTORY_RPM_NAME}"
+   yum install -y "${ARTIFACTORY_RPM_NAME}" && echo "Success" || \
+     err_exit "Failed to install ${ARTIFACTORY_RPM_NAME}"
+fi
+
 # Good news/bad news:
 # * Artifactory 6.x now comes with systemd unit-files
 # * Artifactory's systemd unit-files need massaging...
