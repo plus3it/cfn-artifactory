@@ -34,8 +34,6 @@ pipeline {
         string(name: 'KeyPairName', description: 'Logical name of instance-provisioner SSH key')
         string(name: 'SecurityGroupIds', description: 'List of security groups to apply to the instance')
         string(name: 'SubnetId', description: 'ID of the subnet to assign to the instance')
-        string(name: 'AppScriptParams', defaultValue: '', description: 'Parameters to pass to application-script')
-        string(name: 'AppScriptUrl', description: '(Optional) S3 URL to the application script in an S3 bucket (s3://). Leave blank to launch without an application script. If specified, an appropriate "InstanceRole" is required')
         string(name: 'AppVolumeDevice', defaultValue: 'false', description: 'Decision on whether to mount an extra EBS volume. Leave as default ("false") to launch without an extra application volume')
         string(name: 'AppVolumeMountPath', description: 'Filesystem path to mount the extra app volume. Ignored if "AppVolumeDevice" is false')
         string(name: 'AppVolumeSize', description: 'Size in GB of the EBS volume to create. Ignored if "AppVolumeDevice" is false')
@@ -86,14 +84,6 @@ pipeline {
                             {
                                 "ParameterKey": "AmiId",
                                 "ParameterValue": "${env.AmiId}"
-                            },
-                            {
-                                "ParameterKey": "AppScriptParams",
-                                "ParameterValue": "${env.AppScriptParams}"
-                            },
-                            {
-                                "ParameterKey": "AppScriptUrl",
-                                "ParameterValue": "${env.AppScriptUrl}"
                             },
                             {
                                 "ParameterKey": "AppVolumeDevice",
