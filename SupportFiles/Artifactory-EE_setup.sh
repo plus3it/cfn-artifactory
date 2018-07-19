@@ -199,7 +199,7 @@ function SharedClusterHomeAppSetup {
 ## Un-shared cluster-config
 function UnSharedClusterHomeFsSetup {
 
-   VGNAME="$( vgs --noheadings -o vg_name )"
+   VGNAME="$( vgs --noheadings -o vg_name | sed 's/ //g' )"
 
    printf "Creating volume for Artifactory data... "
    lvcreate -l 100%FREE -n cluDataDir "${VGNAME}" && echo "Success" || \
@@ -215,7 +215,7 @@ function UnSharedClusterHomeFsSetup {
       echo "Artifactory CLUSTER_HOME already in fstab"
    else
       printf "Adding Artifactory CLUSTER_HOME to fstab... "
-      printf "%s:/\t%s\tnfs4\tdefaults\t0 0" "/dev/${VGNAME}/cluDataDir" "${AFCLHOME}" \
+      printf "%s\t%s\text4\tdefaults\t0 0\n" "/dev/${VGNAME}/cluDataDir" "${AFCLHOME}" \
         >> /etc/fstab && echo Success || \
           err_exit "Failed adding Artifactory CLUSTER_HOME to fstab"
    fi
