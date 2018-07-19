@@ -168,15 +168,6 @@ function DisableFips {
 ## Shared cluster-config
 function SharedClusterHomeFsSetup {
 
-   # Ensure Artifactory CLUSTER_HOME directory exists
-   if [[ ! -d ${AFCLHOME} ]]
-   then
-     (
-       umask 022
-       printf "Creating %s... " "${AFCLHOME}"
-       install -d -m 000755 "${AFCLHOME}"
-      )
-   fi
    
    # Add Artifactory CLUSTER_HOME to fstab
    if [[ $( grep -q "${NFSSVR}" /etc/fstab )$? -eq 0 ]]
@@ -253,6 +244,16 @@ fi
 
 # Install additional RPMS to support installation requirements
 InstMissingRPM
+
+# Ensure Artifactory CLUSTER_HOME directory exists
+if [[ ! -d ${AFCLHOME} ]]
+then
+  (
+    umask 022
+    printf "Creating %s... " "${AFCLHOME}"
+    install -d -m 000755 "${AFCLHOME}"
+   )
+fi
 
 # Check if using shared cluster-home
 if [[ -z ${NFSSVR+x} ]] || [[ ${NFSSVR} = '' ]]
