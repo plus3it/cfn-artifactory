@@ -164,6 +164,77 @@ function DisableFips {
    fi
 }
 
+##
+## Shared cluster-config
+function SharedClusterHomeFsSetup {
+
+   # Ensure Artifactory CLUSTER_HOME directory exists
+   if [[ ! -d ${AFCLHOME} ]]
+   then
+     (
+       umask 022
+       printf "Creating %s... " "${AFCLHOME}"
+       install -d -m 000755 "${AFCLHOME}"
+      )
+   fi
+   
+   # Add Artifactory CLUSTER_HOME to fstab
+   if [[ $( grep -q "${NFSSVR}" /etc/fstab )$? -eq 0 ]]
+   then
+      echo "Artifactory CLUSTER_HOME already in fstab"
+   else
+      printf "Adding Artifactory CLUSTER_HOME to fstab... "
+      printf "%s:/\t%s\tnfs4\tdefaults\t0 0" "${NFSSVR}" "${AFCLHOME}" \
+        >> /etc/fstab && echo Success || \
+          err_exit "Failed adding Artifactory CLUSTER_HOME to fstab"
+   fi
+   
+   # Mount shared CLUSTER_HOME
+   printf "Mounting %s... " "${AFCLHOME}"
+   mount -a nfs && echo "Success" || err_exit "Failed mounting ${AFCLHOME}"
+}
+
+function SharedClusterHomeAppSetup {
+  # Add shared config-directives to ha-node file
+  printf "Adding NFS-hosted shared-config location to ha-node.properties file...\n\t"
+  (
+    echo "artifactory.ha.data.dir=${AFSAHOME}-cluster/data"
+    echo "artifactory.ha.backup.dir=${AFSAHOME}-cluster/backup"
+   ) >> "${AFSAHOME}/etc/ha-node.properties" && echo "Success" || \
+     err_exit "Failed to add shared-config location to HA node's properties"
+}
+
+##
+## Un-shared cluster-config
+function UnSharedClusterHomeFsSetup {
+
+   VGNAME="$( vgs --noheadings -o vg_name )"
+
+   printf "Creating volume for Artifactory data... "
+   lvcreate -l 100%FREE -n cluDataDir "${VGNAME}" && echo "Success" || \
+     err_exit "Failed creating volume for Artifactory data"
+
+   printf "Creating filesystem on %s... " "/dev/${VGNAME}/cluDataDir"
+   mkfs -t ext4 "/dev/${VGNAME}/cluDataDir" && echo "Success" || \
+     err_exit "Failed while creating filesystem /dev/${VGNAME}/cluDataDir"
+
+   # Add Artifactory CLUSTER_HOME to fstab
+   if [[ $( grep -q "/dev/${VGNAME}/cluDataDir" /etc/fstab )$? -eq 0 ]]
+   then
+      echo "Artifactory CLUSTER_HOME already in fstab"
+   else
+      printf "Adding Artifactory CLUSTER_HOME to fstab... "
+      printf "%s:/\t%s\tnfs4\tdefaults\t0 0" "/dev/${VGNAME}/cluDataDir" "${AFCLHOME}" \
+        >> /etc/fstab && echo Success || \
+          err_exit "Failed adding Artifactory CLUSTER_HOME to fstab"
+   fi
+   
+   # Mount un-shared CLUSTER_HOME
+   printf "Mounting %s... " "${AFCLHOME}"
+   mount -a "${AFCLHOME}" && echo "Success" || \
+     err_exit "Failed mounting ${AFCLHOME}"
+}
+
 
 ########################################
 ## Main Program Flow
@@ -183,30 +254,20 @@ fi
 # Install additional RPMS to support installation requirements
 InstMissingRPM
 
-# Ensure Artifactory CLUSTER_HOME directory exists
-if [[ ! -d ${AFCLHOME} ]]
+# Check if using shared cluster-home
+if [[ -z ${NFSSVR+x} ]] || [[ ${NFSSVR} = '' ]]
 then
-  (
-    umask 022
-    printf "Creating %s... " "${AFCLHOME}"
-    install -d -m 000755 "${AFCLHOME}"
-   )
-fi
+   echo "Not using shared cluster-home"
 
-# Add Artifactory CLUSTER_HOME to fstab
-if [[ $( grep -q "${NFSSVR}" /etc/fstab )$? -eq 0 ]]
-then
-   echo "Artifactory CLUSTER_HOME already in fstab"
+   # Call routines to configure for un-shared cluster-config
+   UnSharedClusterHomeFsSetup
 else
-   printf "Adding Artifactory CLUSTER_HOME to fstab... "
-   printf "%s:/\t%s\tnfs4\tdefaults\t0 0" "${NFSSVR}" "${AFCLHOME}" \
-     >> /etc/fstab && echo Success || \
-       err_exit "Failed adding Artifactory CLUSTER_HOME to fstab"
+   echo "Using shared cluster-home"
+
+   # Call routines to configure for NFS-shared cluster-config
+   SharedClusterHomeAppSetup
 fi
 
-# Mount shared CLUSTER_HOME
-printf "Mounting %s... " "${AFCLHOME}"
-mount -a nfs && echo "Success" || err_exit "Failed mounting ${AFCLHOME}"
 
 ######################################################
 ## "Rough-sketch" of further procedures to automate ##
@@ -292,8 +353,6 @@ install -b -m 000644 -o artifactory -g artifactory <(
   echo "context.url=http://$( ip addr show eth0 | awk '/ inet /{print $2}' | sed 's#/.*$#:8081/artifactory#' )"
   echo "membership.port=10001"
   echo "primary=true"
-  echo "artifactory.ha.data.dir=${AFSAHOME}-cluster/data"
-  echo "artifactory.ha.backup.dir=${AFSAHOME}-cluster/backup"
   echo "hazelcast.interface=$( ip addr show eth0 | awk '/ inet /{print $2}' | sed 's#/.*$##' )"
  ) "${AFSAHOME}/etc/ha-node.properties" && echo "Success" || \
   err_exit "Failed to set up HA node's properties"
