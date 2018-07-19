@@ -34,10 +34,6 @@ pipeline {
         string(name: 'KeyPairName', description: 'Logical name of instance-provisioner SSH key')
         string(name: 'SecurityGroupIds', description: 'List of security groups to apply to the instance')
         string(name: 'SubnetId', description: 'ID of the subnet to assign to the instance')
-        string(name: 'AppVolumeDevice', defaultValue: 'false', description: 'Decision on whether to mount an extra EBS volume. Leave as default ("false") to launch without an extra application volume')
-        string(name: 'AppVolumeMountPath', description: 'Filesystem path to mount the extra app volume. Ignored if "AppVolumeDevice" is false')
-        string(name: 'AppVolumeSize', description: 'Size in GB of the EBS volume to create. Ignored if "AppVolumeDevice" is false')
-        string(name: 'AppVolumeType', description: 'Type of EBS volume to create. Ignored if "AppVolumeDevice" is false')
         string(name: 'ArtifactoryAppHome', description: 'Root-location of non-shared Artifactory components')
         string(name: 'ArtifactoryClusterHome', description: 'Root-location of cluster-shared Artifactory components')
         string(name: 'ArtifactoryClusterKey', description: 'A hexadecimal string used to secure intra-cluster communications (ignored if "ClusterHome" is null; use `openssl rand -hex 16` to generate)')
@@ -84,22 +80,6 @@ pipeline {
                             {
                                 "ParameterKey": "AmiId",
                                 "ParameterValue": "${env.AmiId}"
-                            },
-                            {
-                                "ParameterKey": "AppVolumeDevice",
-                                "ParameterValue": "${env.AppVolumeDevice}"
-                            },
-                            {
-                                "ParameterKey": "AppVolumeMountPath",
-                                "ParameterValue": "${env.AppVolumeMountPath}"
-                            },
-                            {
-                                "ParameterKey": "AppVolumeSize",
-                                "ParameterValue": "${env.AppVolumeSize}"
-                            },
-                            {
-                                "ParameterKey": "AppVolumeType",
-                                "ParameterValue": "${env.AppVolumeType}"
                             },
                             {
                                 "ParameterKey": "ArtifactoryAppHome",

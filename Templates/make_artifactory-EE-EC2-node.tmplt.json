@@ -16,9 +16,6 @@
         { "Fn::Equals": [ { "Ref": "PrivateIp" }, "" ] }
       ]
     },
-    "CreateAppVolume": {
-      "Fn::Equals": [ { "Ref": "AppVolumeDevice" }, "true" ]
-    },
     "InstallCloudWatchAgent": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "CloudWatchAgentUrl" }, "" ] }
@@ -32,18 +29,6 @@
     "Reboot": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "NoReboot" }, "true" ] }
-      ]
-    },
-    "SupportsNvme": {
-      "Fn::Equals": [
-        {
-          "Fn::FindInMap": [
-            "InstanceTypeMap",
-            { "Ref": "InstanceType" },
-            "SupportsNvme"
-          ]
-        },
-        "true"
       ]
     },
     "UseAdminGroups": {
@@ -83,49 +68,7 @@
     }
   },
   "Description": "This template deploys the Artifactory web-application onto a STIG-hardened EL7-based Linux instance",
-  "Mappings": {
-    "InstanceTypeMap": {
-      "c4.large": {
-        "SupportsNvme": "false"
-      },
-      "c4.xlarge": {
-        "SupportsNvme": "false"
-      },
-      "c5.large": {
-        "SupportsNvme": "true"
-      },
-      "c5.xlarge": {
-        "SupportsNvme": "true"
-      },
-      "m4.large": {
-        "SupportsNvme": "false"
-      },
-      "m4.xlarge": {
-        "SupportsNvme": "false"
-      },
-      "m5.large": {
-        "SupportsNvme": "true"
-      },
-      "m5.xlarge": {
-        "SupportsNvme": "true"
-      },
-      "t2.large": {
-        "SupportsNvme": "false"
-      },
-      "t2.medium": {
-        "SupportsNvme": "false"
-      },
-      "t2.micro": {
-        "SupportsNvme": "false"
-      },
-      "t2.small": {
-        "SupportsNvme": "false"
-      },
-      "t2.xlarge": {
-        "SupportsNvme": "false"
-      }
-    }
-  },
+  "Mappings": {},
   "Metadata": {
     "AWS::CloudFormation::Interface": {
       "ParameterGroups": [
@@ -146,17 +89,6 @@
             "InstanceRoleProfile",
             "NoReboot",
             "NoUpdates"
-          ]
-        },
-        {
-          "Label": {
-            "default": "EC2 Application EBS Volume"
-          },
-          "Parameters": [
-            "AppVolumeDevice",
-            "AppVolumeMountPath",
-            "AppVolumeSize",
-            "AppVolumeType"
           ]
         },
         {
@@ -245,41 +177,6 @@
     "AmiId": {
       "AllowedPattern": "^ami-[0-9a-z]{8}$|^ami-[0-9a-z]{17}$",
       "Description": "ID of the AMI to launch",
-      "Type": "String"
-    },
-    "AppVolumeDevice": {
-      "AllowedValues": [
-        "true",
-        "false"
-      ],
-      "Default": "false",
-      "Description": "Decision on whether to mount an extra EBS volume. Leave as default (\"false\") to launch without an extra application volume",
-      "Type": "String"
-    },
-    "AppVolumeMountPath": {
-      "AllowedPattern": "/.*",
-      "Default": "/opt/data",
-      "Description": "Filesystem path to mount the extra app volume. Ignored if \"AppVolumeDevice\" is false",
-      "Type": "String"
-    },
-    "AppVolumeSize": {
-      "ConstraintDescription": "Must be between 1GB and 16384GB.",
-      "Default": "1",
-      "Description": "Size in GB of the EBS volume to create. Ignored if \"AppVolumeDevice\" is false",
-      "MaxValue": "16384",
-      "MinValue": "1",
-      "Type": "Number"
-    },
-    "AppVolumeType": {
-      "AllowedValues": [
-        "gp2",
-        "io1",
-        "sc1",
-        "st1",
-        "standard"
-      ],
-      "Default": "gp2",
-      "Description": "Type of EBS volume to create. Ignored if \"AppVolumeDevice\" is false",
       "Type": "String"
     },
     "ArtifactoryAppHome": {
@@ -1346,20 +1243,6 @@
               "VolumeSize" : { "Ref" : "RootVolumeSize" },
               "VolumeType": "gp2"
             }
-          },
-          {
-            "Fn::If": [
-              "CreateAppVolume",
-              {
-                "DeviceName": "/dev/xvdf",
-                "Ebs": {
-                  "DeleteOnTermination": "true",
-                  "VolumeSize": { "Ref": "AppVolumeSize" },
-                  "VolumeType": { "Ref": "AppVolumeType" }
-                }
-              },
-              { "Ref": "AWS::NoValue" }
-            ]
           }
         ],
         "IamInstanceProfile": {
@@ -1430,42 +1313,6 @@
                 "  mode: auto\n",
                 "  devices: [ '/dev/xvda', '/dev/xvda2', '/dev/nvme0n1p2' ]\n",
                 "  ignore_growroot_disabled: false\n",
-                "\n",
-                {
-                  "Fn::If": [
-                    "CreateAppVolume",
-                    {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "bootcmd:\n",
-                          "- cloud-init-per instance mkfs-appvolume mkfs -t ext4 ",
-                          {
-                            "Fn::If": [
-                              "SupportsNvme",
-                              "/dev/nvme1n1",
-                              "/dev/xvdf"
-                            ]
-                          },
-                          "\n",
-                          "mounts:\n",
-                          "- [ ",
-                          {
-                            "Fn::If": [
-                              "SupportsNvme",
-                              "/dev/nvme1n1",
-                              "/dev/xvdf"
-                            ]
-                          },
-                          ", ",
-                          { "Ref": "AppVolumeMountPath" },
-                          " ]\n"
-                        ]
-                      ]
-                    },
-                    { "Ref": "AWS::NoValue" }
-                  ]
-                },
                 "\n",
                 "--===============3585321300151562773==\n",
                 "Content-Type: text/x-shellscript; charset=\"us-ascii\"\n",
