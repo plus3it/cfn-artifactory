@@ -58,6 +58,7 @@ pipeline {
         string(name: 'PrivateIp', description: '(Optional) Set a static, primary private IP. Leave blank to auto-select a free IP')
         string(name: 'PypiIndexUrl', defaultValue: 'https://pypi.org/simple', description: 'URL to the PyPi Index')
         string(name: 'ProvisionUser', defaultValue: 'testuser', description: 'Name to use for provisioning-user account (instance default-account)')
+        string(name: 'AdminGroupKeyfile', defaultValue: '', description: 'URL to public-key bundle to install into provisioning-user authorized_keys file')
         string(name: 'RootVolumeSize', description: 'Size in GB of the root EBS volume to create. If smaller than AMI default, create operation will fail; If larger, root device-volume partition size will be increased')
         string(name: 'ToggleCfnInitUpdate', description: 'Arbitrary value that forces and instance to be updated')
         string(name: 'WatchmakerAdminGroups', description: '(Optional) Colon-separated list of domain groups that should have admin permissions on the EC2 instance')
@@ -78,6 +79,10 @@ pipeline {
                 writeFile file: 'EC2-Wam.parms.json',
                     text: /
                         [
+                            {
+                                "ParameterKey": "AdminGroupKeyfile",
+                                "ParameterValue": "${env.AdminGroupKeyfile}"
+                            },
                             {
                                 "ParameterKey": "AmiId",
                                 "ParameterValue": "${env.AmiId}"
