@@ -16,6 +16,11 @@
         { "Fn::Equals": [ { "Ref": "PrivateIp" }, "" ] }
       ]
     },
+    "HaveAkas": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "AkaList" }, "" ] }
+      ]
+    },
     "InstallCloudWatchAgent": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "CloudWatchAgentUrl" }, "" ] }
@@ -187,6 +192,10 @@
     "AdminGroupKeyfile": {
       "AllowedPattern": "^http[s]?://.*|^$",
       "Description": "(Optional) URL of file containing admin group's SSH public-keys",
+      "Type": "String"
+    },
+    "AkaList": {
+      "Description": "Comma-delimited list of FQDNs that should be accepted as valid names to service requests on behalf of.",
       "Type": "String"
     },
     "AmiId": {
@@ -906,6 +915,9 @@
                        "\n",
                       "ARTIFACTORY_DB_PASSWD=",
                        { "Ref": "ArtifactoryDbAdminPasswd" },
+                       "\n",
+                      "ARTIFACTORY_PROXY_AKAS=",
+                       { "Ref": "AkaList" },
                        "\n",
                       "ARTIFACTORY_S3_BAKUP_LOCS=",
                        { "Ref": "ArtifactoryS3BakupLocs" },

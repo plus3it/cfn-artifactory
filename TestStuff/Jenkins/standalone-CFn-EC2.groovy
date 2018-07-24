@@ -29,6 +29,7 @@ pipeline {
         string(name: 'GitProjBranch', description: 'Project-branch to use from the Sonarqube git project')
         string(name: 'CfnStackRoot', description: 'Unique token to prepend to all stack-element names')
         string(name: 'TemplateUrl', description: 'S3-hosted location of EC2 CFn template')
+        string(name: 'AkaList', defaultValue: '', description: '')
         string(name: 'AmiId', description: 'ID of the AMI from which to launch an instance')
         string(name: 'InstanceType', defaultValue: 't2.xlarge', description: 'Amazon EC2 instance type')
         string(name: 'KeyPairName', description: 'Logical name of instance-provisioner SSH key')
@@ -82,6 +83,10 @@ pipeline {
                             {
                                 "ParameterKey": "AdminGroupKeyfile",
                                 "ParameterValue": "${env.AdminGroupKeyfile}"
+                            },
+                            {
+                                "ParameterKey": "AkaList",
+                                "ParameterValue": "${env.AkaList}"
                             },
                             {
                                 "ParameterKey": "AmiId",
