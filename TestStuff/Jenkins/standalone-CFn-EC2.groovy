@@ -39,7 +39,7 @@ pipeline {
         string(name: 'ArtifactoryClusterHome', description: 'Root-location of cluster-shared Artifactory components')
         string(name: 'ArtifactoryClusterKey', description: 'A hexadecimal string used to secure intra-cluster communications (ignored if "ClusterHome" is null; use `openssl rand -hex 16` to generate)')
         string(name: 'ArtifactoryClusterMaster', description: 'Whether this node is a cluster master-node (ignored if "ClusterHome" is null)')
-        string(name: 'ArtifactoryDbHostFqdn', description: 'Fully-qualified domain name of the (externalized) Artifactory configuration database-host/cluster')
+        string(name: 'ArtifactoryDbHost', description: 'Fully-qualified domain name of the (externalized) Artifactory configuration database-host/cluster')
         string(name: 'ArtifactoryDbInstance', description: 'Instance-name of the Artifactory configuration database')
         string(name: 'ArtifactoryDbAdminUser', description: 'Name of the privileged user account used to connect to the Artifactory configuration database')
         string(name: 'ArtifactoryDbAdminPasswd', description: 'Password of the privileged user account used to connect to the Artifactory configuration database')
@@ -59,7 +59,7 @@ pipeline {
         string(name: 'PrivateIp', description: '(Optional) Set a static, primary private IP. Leave blank to auto-select a free IP')
         string(name: 'PypiIndexUrl', defaultValue: 'https://pypi.org/simple', description: 'URL to the PyPi Index')
         string(name: 'ProvisionUser', defaultValue: 'testuser', description: 'Name to use for provisioning-user account (instance default-account)')
-        string(name: 'AdminGroupKeyfile', defaultValue: '', description: 'URL to public-key bundle to install into provisioning-user authorized_keys file')
+        string(name: 'AdminPubkeyURL', defaultValue: '', description: 'URL to public-key bundle to install into provisioning-user authorized_keys file')
         string(name: 'RootVolumeSize', description: 'Size in GB of the root EBS volume to create. If smaller than AMI default, create operation will fail; If larger, root device-volume partition size will be increased')
         string(name: 'ToggleCfnInitUpdate', description: 'Arbitrary value that forces and instance to be updated')
         string(name: 'WatchmakerAdminGroups', description: '(Optional) Colon-separated list of domain groups that should have admin permissions on the EC2 instance')
@@ -81,8 +81,8 @@ pipeline {
                     text: /
                         [
                             {
-                                "ParameterKey": "AdminGroupKeyfile",
-                                "ParameterValue": "${env.AdminGroupKeyfile}"
+                                "ParameterKey": "AdminPubkeyURL",
+                                "ParameterValue": "${env.AdminPubkeyURL}"
                             },
                             {
                                 "ParameterKey": "AkaList",
@@ -117,8 +117,8 @@ pipeline {
                                 "ParameterValue": "${env.ArtifactoryDbAdminUser}"
                             },
                             {
-                                "ParameterKey": "ArtifactoryDbHostFqdn",
-                                "ParameterValue": "${env.ArtifactoryDbHostFqdn}"
+                                "ParameterKey": "ArtifactoryDbHost",
+                                "ParameterValue": "${env.ArtifactoryDbHost}"
                             },
                             {
                                 "ParameterKey": "ArtifactoryDbInstance",

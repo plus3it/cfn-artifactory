@@ -41,9 +41,9 @@
         { "Fn::Equals": [ { "Ref": "WatchmakerAdminGroups" }, "" ] }
       ]
     },
-    "UseAdminGroupKeyfile": {
+    "UseAdminPubkeyURL": {
       "Fn::Not": [
-        { "Fn::Equals": [ { "Ref": "AdminGroupKeyfile" }, "" ] }
+        { "Fn::Equals": [ { "Ref": "AdminPubkeyURL" }, "" ] }
       ]
     },
     "UseAdminUsers": {
@@ -115,7 +115,7 @@
             "ArtifactoryRpmName",
             "ArtifactoryAppHome",
             "ArtifactoryClusterHome",
-            "ArtifactoryDbHostFqdn",
+            "ArtifactoryDbHost",
             "ArtifactoryDbInstance",
             "ArtifactoryDbAdminUser",
             "ArtifactoryDbAdminPasswd",
@@ -189,7 +189,7 @@
     }
   },
   "Parameters": {
-    "AdminGroupKeyfile": {
+    "AdminPubkeyURL": {
       "AllowedPattern": "^http[s]?://.*|^$",
       "Description": "(Optional) URL of file containing admin group's SSH public-keys",
       "Type": "String"
@@ -230,7 +230,7 @@
       "Description": "Whether this node is a cluster's master node (ignored if \"ClusterHome\" is null)",
       "Type": "String"
     },
-    "ArtifactoryDbHostFqdn": {
+    "ArtifactoryDbHost": {
       "Default": "",
       "Description": "Fully-qualified domain name of the (externalized) Artifactory configuration database-host/cluster",
       "Type": "String"
@@ -457,7 +457,7 @@
             },
             "files": {
               "/etc/cfn/files/AdminKeys.pub": {
-                "source": { "Ref": "AdminGroupKeyfile" },
+                "source": { "Ref": "AdminPubkeyURL" },
                 "group": "root",
                 "mode": "000600",
                 "owner": "root"
@@ -492,7 +492,7 @@
               "setup",
               {
                 "Fn::If": [
-                  "UseAdminGroupKeyfile",
+                  "UseAdminPubkeyURL",
                   "admkey-install",
                   { "Ref": "AWS::NoValue" }
                 ]
@@ -526,7 +526,7 @@
               "setup",
               {
                 "Fn::If": [
-                  "UseAdminGroupKeyfile",
+                  "UseAdminPubkeyURL",
                   "admkey-install",
                   { "Ref": "AWS::NoValue" }
                 ]
@@ -905,7 +905,7 @@
                        { "Ref": "ArtifactoryClusterMaster" },
                        "\n",
                       "ARTIFACTORY_DB_HOSTFQDN=",
-                       { "Ref": "ArtifactoryDbHostFqdn" },
+                       { "Ref": "ArtifactoryDbHost" },
                        "\n",
                       "ARTIFACTORY_DB_INSTANCE=",
                        { "Ref": "ArtifactoryDbInstance" },
@@ -1053,7 +1053,7 @@
                       "type=postgresql\n",
                       "driver=org.postgresql.Driver\n",
                       "url=jdbc:postgresql://",
-                        { "Ref": "ArtifactoryDbHostFqdn" },
+                        { "Ref": "ArtifactoryDbHost" },
                         ":5432/",
                         { "Ref": "ArtifactoryDbInstance" },
                         "\n",
