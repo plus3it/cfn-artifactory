@@ -354,7 +354,7 @@
       "Type": "String"
     },
     "ProvisionUser": {
-      "AllowedPattern": "[a-z0-9]{6,12}+",
+      "AllowedPattern": "[a-z0-9-]{6,12}",
       "ConstraintDescription": "Alphanumeric string between 6 and 12 characters.",
       "Default": "ec2-user",
       "Description": "Name for remote-administration account",
@@ -1385,6 +1385,13 @@
                 "\n",
                 "#cloud-config\n",
                 "\n",
+                "system_info:\n",
+                "  default_user:\n",
+                "    name: ",
+                     { "Ref": "ProvisionUser" },
+                     "\n",
+                "\n",
+                "#cloud-config\n",
                 "hostname: ",
                 { "Ref": "WatchmakerComputerName" },
                 "\n",
