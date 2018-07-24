@@ -28,7 +28,7 @@ pipeline {
         string(name: 'GitProjUrl', description: 'SSH URL from which to download the Sonarqube git project')
         string(name: 'GitProjBranch', description: 'Project-branch to use from the Sonarqube git project')
         string(name: 'CfnStackRoot', description: 'Unique token to prepend to all stack-element names')
-        string(name: 'TemplateUrl', description: 'S3-hosted location of template')
+        string(name: 'TemplateUrl', description: 'S3-hosted location of EC2 CFn template')
         string(name: 'AmiId', description: 'ID of the AMI from which to launch an instance')
         string(name: 'InstanceType', defaultValue: 't2.xlarge', description: 'Amazon EC2 instance type')
         string(name: 'KeyPairName', description: 'Logical name of instance-provisioner SSH key')
@@ -57,6 +57,7 @@ pipeline {
         string(name: 'NoUpdates', defaultValue: 'false', description: 'Controls whether to run yum update during a stack update (on the initial instance launch, Watchmaker usually installs updates)')
         string(name: 'PrivateIp', description: '(Optional) Set a static, primary private IP. Leave blank to auto-select a free IP')
         string(name: 'PypiIndexUrl', defaultValue: 'https://pypi.org/simple', description: 'URL to the PyPi Index')
+        string(name: 'ProvisionUser', defaultValue: 'testuser', description: 'Name to use for provisioning-user account (instance default-account)')
         string(name: 'RootVolumeSize', description: 'Size in GB of the root EBS volume to create. If smaller than AMI default, create operation will fail; If larger, root device-volume partition size will be increased')
         string(name: 'ToggleCfnInitUpdate', description: 'Arbitrary value that forces and instance to be updated')
         string(name: 'WatchmakerAdminGroups', description: '(Optional) Colon-separated list of domain groups that should have admin permissions on the EC2 instance')
@@ -176,6 +177,10 @@ pipeline {
                             {
                                 "ParameterKey": "PrivateIp",
                                 "ParameterValue": "${env.PrivateIp}"
+                            },
+                            {
+                                "ParameterKey": "ProvisionUser",
+                                "ParameterValue": "${env.ProvisionUser}"
                             },
                             {
                                 "ParameterKey": "PypiIndexUrl",

@@ -36,6 +36,11 @@
         { "Fn::Equals": [ { "Ref": "WatchmakerAdminGroups" }, "" ] }
       ]
     },
+    "UseAdminGroupKeyfile": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "AdminGroupKeyfile" }, "" ] }
+      ]
+    },
     "UseAdminUsers": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "WatchmakerAdminUsers" }, "" ] }
@@ -348,6 +353,13 @@
       "Description": "(Optional) Set a static, primary private IP. Leave blank to auto-select a free IP",
       "Type": "String"
     },
+    "ProvisionUser": {
+      "AllowedPattern": "[a-z0-9]{6,12}+",
+      "ConstraintDescription": "Alphanumeric string between 6 and 12 characters.",
+      "Default": "ec2-user",
+      "Description": "Name for remote-administration account",
+      "Type": "String"
+    },
     "PypiIndexUrl": {
       "AllowedPattern": "^http[s]?://.*$",
       "Default": "https://pypi.org/simple",
@@ -428,9 +440,54 @@
       },
       "Metadata": {
         "AWS::CloudFormation::Init": {
+          "admkey-install": {
+            "commands": {
+              "1-install-keyfile": {
+                "command": "bash -xe /etc/cfn/scripts/admkey.sh"
+              }
+            },
+            "files": {
+              "/etc/cfn/files/AdminKeys.pub": {
+                "source": { "Ref": "AdminGroupKeyfile" },
+                "group": "root",
+                "mode": "000600",
+                "owner": "root"
+              },
+              "/etc/cfn/scripts/admkey.sh": {
+              "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "#!/bin/bash\n\n",
+                      "PROVHOME=$(getent passwd ",
+                      { "Ref": "ProvisionUser" },
+                      " | awk -F\":\" '{print $6}')\n",
+                      "\n",
+                      "install -b -m 000600 -o ",
+                      { "Ref": "ProvisionUser" },
+                      " -g ",
+                      { "Ref": "ProvisionUser" },
+                      " /etc/cfn/files/AdminKeys.pub ${PROVHOME}/.ssh/authorized_keys\n",
+                      "\n"
+                    ]
+                  ]
+                },
+                "group": "root",
+                "mode": "000700",
+                "owner": "root"
+              }
+            }
+          },
           "configSets": {
             "launch": [
               "setup",
+              {
+                "Fn::If": [
+                  "UseAdminGroupKeyfile",
+                  "admkey-install",
+                  { "Ref": "AWS::NoValue" }
+                ]
+              },
               {
                 "Fn::If": [
                   "InstallCloudWatchAgent",
@@ -458,6 +515,13 @@
             ],
             "update": [
               "setup",
+              {
+                "Fn::If": [
+                  "UseAdminGroupKeyfile",
+                  "admkey-install",
+                  { "Ref": "AWS::NoValue" }
+                ]
+              },
               {
                 "Fn::If": [
                   "InstallUpdates",
