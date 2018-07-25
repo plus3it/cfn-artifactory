@@ -748,12 +748,12 @@
           },
           "run-installer": {
             "commands": {
-              "1-get-installer_script": {
+              "01-get-installer_script": {
                 "command": {
                   "Fn::Join": [
                     "",
                     [
-                      "bash -c \"install -b -m 000755 <(",
+                      "bash -xec \"install -b -m 000755 <(",
                        "aws s3 cp s3://",
                        { "Ref": "ArtifactoryToolBucket" },
                        "/SupportFiles/artifactory-EE_setup.sh -)  ",
@@ -762,14 +762,14 @@
                   ]
                 }
               },
-              "2-get-proxy_template": {
+              "02-get-proxy_template": {
                 "command": {
                   "Fn::Join": [
                     "",
                     [
-                      "bash -c \"install -b -m 000600 <(",
-                      "aws s3 cp s3://",
-                      { "Ref": "ArtifactoryToolBucket" },
+                      "bash -xec \"install -b -m 000600 <(",
+                       "aws s3 cp s3://",
+                       { "Ref": "ArtifactoryToolBucket" },
                       "/SupportFiles/AFproxy-EE.conf.tmpl -) ",
                       "/etc/cfn/files/AFproxy.conf.tmpl\""
                     ]

@@ -1,10 +1,10 @@
 #!/bin/bash
-# shellcheck disable=SC2015
+# shellcheck disable=SC2015,SC2155,SC2046
 #
 # Script to:
 # * Ready a watchmaker-hardened EL7 OS for installation of the
 #   Artifactory Enterprise Edition software
-# * Install and configure Artifactory using parm/vals kept in 
+# * Install and configure Artifactory using parm/vals kept in
 #   an "environment" file
 #
 #################################################################
@@ -30,6 +30,9 @@ RPMDEPLST=(
       nfs-utils
       postgresql-jdbc
    )
+NGINXRPM="nginx"
+SVCALIASES=(${ARTIFACTORY_PROXY_AKAS//,/ })
+MEMALLOC="$(awk '/^MemFree/{ printf("%d\n", ($2 * 0.80)/1024) }' /proc/meminfo)"
 
 
 ##
@@ -168,7 +171,7 @@ function DisableFips {
 ## Shared cluster-config
 function SharedClusterHomeFsSetup {
 
-   
+
    # Add Artifactory CLUSTER_HOME to fstab
    if [[ $( grep -q "${NFSSVR}" /etc/fstab )$? -eq 0 ]]
    then
@@ -179,7 +182,7 @@ function SharedClusterHomeFsSetup {
         >> /etc/fstab && echo Success || \
           err_exit "Failed adding Artifactory CLUSTER_HOME to fstab"
    fi
-   
+
    # Mount shared CLUSTER_HOME
    printf "Mounting %s... " "${AFCLHOME}"
    mount -a nfs && echo "Success" || err_exit "Failed mounting ${AFCLHOME}"
@@ -219,11 +222,128 @@ function UnSharedClusterHomeFsSetup {
         >> /etc/fstab && echo Success || \
           err_exit "Failed adding Artifactory CLUSTER_HOME to fstab"
    fi
-   
+
    # Mount un-shared CLUSTER_HOME
    printf "Mounting %s... " "${AFCLHOME}"
    mount -a "${AFCLHOME}" && echo "Success" || \
      err_exit "Failed mounting ${AFCLHOME}"
+}
+
+##
+## Tweak SEL as necessary
+function SelMods {
+   printf "Ensure httpd processes can use network... "
+   setsebool -P httpd_can_network_connect 1 && echo "Success" || \
+     err_exit "Failed setting httpd network boolean"
+
+   if [ ! "${1}" = "" ]
+   then
+      printf "Allow processes running httpd context to use NFS... "
+      setsebool -P httpd_use_nfs 1 && echo "Success" || \
+        err_exit "Failed setting httpd/NFS SEL-boolean"
+
+      printf "Alow httpd rw access to %s... " "${1}"
+      semanage fcontext -a -t "httpd_sys_rw_content_t" "${1}(/.*)?" && \
+        echo "Success" || err_exit "Unable to give httpd rw access to ${1}"
+   fi
+}
+
+##
+## Set up NGINX-based reverse-proxy service
+function ReverseProxy {
+   # Install Nginx
+   printf "Install Nginx service... "
+   yum --enablerepo="*epel" install -y "${NGINXRPM}" && \
+     echo "Success." || \
+     err_exit 'Nginx installation failed'
+   local NGINXDIR=$(
+         dirname $(rpm -ql "${NGINXRPM}" | grep -E 'nginx.conf$')
+      )
+
+   local PROXTMPL="/etc/cfn/files/AFproxy.conf.tmpl" 
+   local PROXCONF="${NGINXDIR}/conf.d/AFproxy.conf"
+
+   if [[ ! -z ${PROXTMPL} ]]
+   then
+
+      # Create proxy config from template
+      printf "Installing templated nginx proxy-config... "
+      install -b -m 000644 -o root -g root "${PROXTMPL}" "${PROXCONF}" && \
+        echo "Success" || \
+          err_exit "Failed installing templated nginx proxy-config" 
+
+      # Fix SEL labels as necessary
+      if [[ $(getenforce) != Disabled ]]
+      then
+         chcon --reference="${NGINXDIR}"/nginx.conf "${PROXCONF}"
+      fi
+
+      printf "Localizing proxy-config... "
+      for ALIAS in "${SVCALIASES[@]}"
+      do
+         SVCALIASES+=('~(?<repo>.+)\.'${ALIAS})
+      done
+
+      sed -i '{
+         s/__AF-FQDN__/'"$(hostname -f)"'/g
+         /^[    ]*server_name/s/;$/'"${SVCALIASES[*]}"';/
+      }' "${PROXCONF}" && \
+        echo "Success" || \
+          err_exit "Failed to update config's alias-list"
+
+
+      printf "Setting max proxy size to %sMiB... " "${MEMALLOC}"
+      sed -i '{
+        s/__AF_CLIENT_MAX__/'"${MEMALLOC}"'m/g
+      }' "${PROXCONF}" && \
+        echo "Success" || \
+          err_exit "Failed to update config's max proxy size"
+
+      printf "Update *_temp_path parm-vals... "
+      sed -i '{
+        s#__AF_CLUSTER_HOME__#'"${AFCLHOME}"'#g
+      }' "${PROXCONF}" && \
+        echo "Success" || \
+          err_exit "Failed to update config's *_temp_path parm-vals"
+
+   fi
+
+   CURBUCKTHASH=$(nginx -T 2>&1 | grep 'server_names_hash_bucket_size' | \
+                  sed 's/^.*: //')
+
+   # Adjust
+   if [[ -z ${CURBUCKTHASH+xxx} ]] || [ "${CURBUCKTHASH}" = "" ]
+   then
+      printf "No 'server_names_hash_bucket_size' error detected:\n"
+      printf "\tserver config should be ok as is.\n"
+   else
+      echo "Doubling currently-defined 'server_names_hash_bucket_size' size."
+      NEWHASH=$((CURBUCKTHASH * 2))
+      sed -i '/^http /a server_names_hash_bucket_size '"${NEWHASH}"';' \
+        "${NGINXDIR}"/nginx.conf
+   fi
+
+   # Lasso SELinux as necessary
+   if [[ $(getenforce) = Disabled ]]
+   then
+      "SELinux not enabled: no need to tweak"
+   else
+      # Check for proxy-temp dirs to except
+      if [[ $(grep -q proxy_temp_path "${PROXCONF}" )$? -eq 0 ]]
+      then
+         local PROXTMPDIR=$(
+             awk '/proxy_temp_path/{ print $2 }' "${PROXCONF}" | \
+               sed -e 's/;$//' -e 's/\/$//'
+            )
+      fi
+
+      # Call routine to tweak SEL config
+      SelMods "${PROXTMPDIR}"
+   fi
+
+   # Enable and start Nginx
+   systemctl enable nginx
+   systemctl start nginx
 }
 
 
@@ -268,11 +388,6 @@ else
    # Call routines to configure for NFS-shared cluster-config
    SharedClusterHomeFsSetup
 fi
-
-
-######################################################
-## "Rough-sketch" of further procedures to automate ##
-######################################################
 
 # Download license files
 printf "Downloading license files... "
@@ -349,7 +464,7 @@ install -b -m 000640 -o artifactory -g artifactory \
 
 # Create/install HA node's properties file
 printf "Configuring cluster node's properties... "
-install -b -m 000644 -o artifactory -g artifactory <( 
+install -b -m 000644 -o artifactory -g artifactory <(
   echo "node.id=$(hostname -s)"
   echo "context.url=http://$( ip addr show eth0 | awk '/ inet /{print $2}' | sed 's#/.*$#:8081/artifactory#' )"
   echo "membership.port=10001"
@@ -394,3 +509,6 @@ do
        echo "Success" || err_exit "Failed creating ${CLUDIR}"
   fi
 done
+
+# Configure NGINX-based reverse-proxy
+ReverseProxy
