@@ -279,6 +279,8 @@ function ReverseProxy {
       fi
 
       printf "Localizing proxy-config... "
+      SVCALIASES+=($(curl http://169.254.169.254/latest/meta-data/local-hostname/))
+      SVCALIASES+=($(curl http://169.254.169.254/latest/meta-data/local-ipv4/))
       for ALIAS in "${SVCALIASES[@]}"
       do
          SVCALIASES+=('~(?<repo>.+)\.'${ALIAS})
@@ -286,7 +288,7 @@ function ReverseProxy {
 
       sed -i '{
          s/__AF-FQDN__/'"$(hostname -f)"'/g
-         /^[    ]*server_name/s/;$/'"${SVCALIASES[*]}"';/
+         /^[    ]*server_name/s/;$/ '"${SVCALIASES[*]}"';/
       }' "${PROXCONF}" && \
         echo "Success" || \
           err_exit "Failed to update config's alias-list"
