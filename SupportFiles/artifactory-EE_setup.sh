@@ -266,7 +266,7 @@ else
    echo "Using shared cluster-home"
 
    # Call routines to configure for NFS-shared cluster-config
-   SharedClusterHomeAppSetup
+   SharedClusterHomeFsSetup
 fi
 
 
@@ -280,7 +280,7 @@ aws s3 sync "s3://${TOOL_BUCKET}/Licenses/" /etc/cfn/files/ && \
   echo "Success" || err_exit "Failed downloading license files"
 
 # Install the Artifactory RPM
-if [[ $( rpm -q "${ARTIFACTORY_RPM_NAME}" )$? -eq 0 ]]
+if [[ $( rpm -q --quiet "${ARTIFACTORY_RPM_NAME}" )$? -eq 0 ]]
 then
    echo "Artifactory RPM already installed"
 else
@@ -357,6 +357,15 @@ install -b -m 000644 -o artifactory -g artifactory <(
   echo "hazelcast.interface=$( ip addr show eth0 | awk '/ inet /{print $2}' | sed 's#/.*$##' )"
  ) "${AFSAHOME}/etc/ha-node.properties" && echo "Success" || \
   err_exit "Failed to set up HA node's properties"
+
+if [[ -z ${NFSSVR+x} ]] || [[ ${NFSSVR} = '' ]]
+then
+   echo "No extra ha-node.properties settings to add"
+
+else
+   echo "Adding NFS-related settings to ha-node.properties file"
+   SharedClusterHomeAppSetup
+fi
 
 # Preserve existing binarystore.xml file
 if [[ -e ${AFSAHOME}/etc/binarystore.xml ]]
