@@ -771,6 +771,25 @@
                 "group": "root",
                 "mode": "000755",
                 "owner": "root"
+              },
+              "/etc/cfn/files/AFproxy.conf.tmpl": {
+                "source": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "https://s3.",
+                      { "Ref": "AWS::Region" },
+                      ".",
+                      { "Ref": "AWS::URLSuffix" },
+                      "/",
+                      { "Ref": "ArtifactoryToolBucket" },
+                      "/SupportFiles/AFproxy-EE.conf.tmpl"
+                    ]
+                  ]
+                },
+                "group": "root",
+                "mode": "000600",
+                "owner": "root"
               }
             }
           },
