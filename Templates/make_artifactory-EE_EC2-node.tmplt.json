@@ -753,14 +753,11 @@
                   "Fn::Join": [
                     "",
                     [
-                      "aws cp https://s3.",
-                       { "Ref": "AWS::Region" },
-                       ".",
-                       { "Ref": "AWS::URLSuffix" },
-                       "/",
+                      "bash -c \"install -b -m 000755 <(",
+                       "aws s3 cp s3://",
                        { "Ref": "ArtifactoryToolBucket" },
-                       "/SupportFiles/artifactory-EE_setup.sh ",
-                       "/etc/cfn/scripts/ArtifactoryEE-installer.sh"
+                       "/SupportFiles/artifactory-EE_setup.sh -)  ",
+                       "/etc/cfn/scripts/ArtifactoryEE-installer.sh\""
                     ]
                   ]
                 }
@@ -770,15 +767,11 @@
                   "Fn::Join": [
                     "",
                     [
-                      "install -b -m 000644 <(",
-                      "aws cp https://s3.",
-                      { "Ref": "AWS::Region" },
-                      ".",
-                      { "Ref": "AWS::URLSuffix" },
-                      "/",
+                      "bash -c \"install -b -m 000600 <(",
+                      "aws s3 cp s3://",
                       { "Ref": "ArtifactoryToolBucket" },
                       "/SupportFiles/AFproxy-EE.conf.tmpl -) ",
-                      "/etc/cfn/files/AFproxy.conf.tmpl"
+                      "/etc/cfn/files/AFproxy.conf.tmpl\""
                     ]
                   ]
                 }
