@@ -28,9 +28,10 @@ pipeline {
         string(name: 'GitProjUrl', description: 'SSH URL from which to download the Sonarqube git project')
         string(name: 'GitProjBranch', description: 'Project-branch to use from the Sonarqube git project')
         string(name: 'CfnStackRoot', description: 'Unique token to prepend to all stack-element names')
-        string(name: 'BackupBucketArn', description: 'ARN of S3 Bucket to host Artifactory backups')
+        string(name: 'BackupBucketArn', description: 'ARN of S3 Bucket used to host Artifactory backups')
+        string(name: 'CloudwatchBucketName', defaultValue: 'amazoncloudwatch-agent', description: 'S3 bucket containing AWS CloudWatch agent archive files')
         string(name: 'RolePrefix', defaultValue: 'INSTANCE', description: 'Prefix to apply to IAM role to make things self-sort in the policy-console (optional)')
-        string(name: 'ServiceTld', defaultValue: 'amazonaws.com', description: 'TLD of the IAMable service-name')
+        string(name: 'ShardBucketArn', description: 'ARN of S3 Bucket to used to host live Artifactory data')
     }
 
     stages {
@@ -45,15 +46,19 @@ pipeline {
                          [
                              {
                                  "ParameterKey": "BackupBucketArn",
-                                 "ParameterValue": "${BackupBucketArn}"
+                                 "ParameterValue": "${env.BackupBucketArn}"
+                             },
+                             {
+                                 "ParameterKey": "CloudwatchBucketName",
+                                 "ParameterValue": "${env.CloudwatchBucketName}"
                              },
                              {
                                  "ParameterKey": "RolePrefix",
-                                 "ParameterValue": "${RolePrefix}"
+                                 "ParameterValue": "${env.RolePrefix}"
                              },
                              {
-                                 "ParameterKey": "ServiceTld",
-                                 "ParameterValue": "${ServiceTld}"
+                                 "ParameterKey": "ShardBucketArn",
+                                 "ParameterValue": "${env.ShardBucketArn}"
                              }
                          ]
                    /
@@ -101,7 +106,7 @@ pipeline {
                         echo "Attempting to create stack ${CfnStackRoot}-IamRes..."
                         aws --region "${AwsRegion}" cloudformation create-stack --stack-name "${CfnStackRoot}-IamRes" \
                           --disable-rollback --capabilities CAPABILITY_NAMED_IAM \
-                          --template-body file://Templates/make_artifactory-PRO_IAM-instance.tmplt.json \
+                          --template-body file://Templates/make_artifactory-EE_IAM-instance.tmplt.json \
                           --parameters file://IAM.parms.json
  
                         sleep 15

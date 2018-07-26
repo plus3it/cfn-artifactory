@@ -43,7 +43,7 @@ pipeline {
                          [
                              {
                                  "ParameterKey": "TargetVPC",
-                                 "ParameterValue": "${TargetVpc}"
+                                 "ParameterValue": "${env.TargetVpc}"
                              }
                          ]
                    /

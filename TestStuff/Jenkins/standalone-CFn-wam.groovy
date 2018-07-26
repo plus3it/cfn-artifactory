@@ -57,59 +57,59 @@ pipeline {
                         [
                             {
                                 "ParameterKey": "AmiId",
-                                "ParameterValue": "${AmiId}"
+                                "ParameterValue": "${env.AmiId}"
                             },
                             {
                                 "ParameterKey": "InstanceType",
-                                "ParameterValue": "${InstanceType}"
+                                "ParameterValue": "${env.InstanceType}"
                             },
                             {
                                 "ParameterKey": "KeyPairName",
-                                "ParameterValue": "${KeyPairName}"
+                                "ParameterValue": "${env.KeyPairName}"
                             },
                             {
                                 "ParameterKey": "SecurityGroupIds",
-                                "ParameterValue": "${SecurityGroupIds}"
+                                "ParameterValue": "${env.SecurityGroupIds}"
                             },
                             {
                                 "ParameterKey": "SubnetId",
-                                "ParameterValue": "${SubnetId}"
+                                "ParameterValue": "${env.SubnetId}"
                             },
                             {
                                 "ParameterKey": "CfnGetPipUrl",
-                                "ParameterValue": "${CfnGetPipUrl}"
+                                "ParameterValue": "${env.CfnGetPipUrl}"
                             },
                             {
                                 "ParameterKey": "InstanceRoleName",
-                                "ParameterValue": "${InstanceRoleName}"
+                                "ParameterValue": "${env.InstanceRoleName}"
                             },
                             {
                                 "ParameterKey": "InstanceRoleProfile",
-                                "ParameterValue": "${InstanceRoleProfile}"
+                                "ParameterValue": "${env.InstanceRoleProfile}"
                             },
                             {
                                 "ParameterKey": "CloudWatchAgentUrl",
-                                "ParameterValue": "${CloudWatchAgentUrl}"
+                                "ParameterValue": "${env.CloudWatchAgentUrl}"
                             },
                             {
                                 "ParameterKey": "PypiIndexUrl",
-                                "ParameterValue": "${PypiIndexUrl}"
+                                "ParameterValue": "${env.PypiIndexUrl}"
                             },
                             {
                                 "ParameterKey": "CfnBootstrapUtilsUrl",
-                                "ParameterValue": "${CfnBootstrapUtilsUrl}"
+                                "ParameterValue": "${env.CfnBootstrapUtilsUrl}"
                             },
                             {
                                 "ParameterKey": "WatchmakerEnvironment",
-                                "ParameterValue": "${WatchmakerEnvironment}"
+                                "ParameterValue": "${env.WatchmakerEnvironment}"
                             },
                             {
                                 "ParameterKey": "WatchmakerComputerName",
-                                "ParameterValue": "${WatchmakerComputerName}"
+                                "ParameterValue": "${env.WatchmakerComputerName}"
                             },
                             {
                                 "ParameterKey": "ToggleCfnInitUpdate",
-                                "ParameterValue": "${ToggleCfnInitUpdate}"
+                                "ParameterValue": "${env.ToggleCfnInitUpdate}"
                             },
                             {
                                 "ParameterKey": "AppScriptParams",

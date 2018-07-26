@@ -59,27 +59,27 @@ pipeline {
                          [
                              {
                                  "ParameterKey": "DbAdminName",
-                                 "ParameterValue": "${DbAdminName}"
+                                 "ParameterValue": "${env.DbAdminName}"
                              },
                              {
                                  "ParameterKey": "DbAdminPass",
-                                 "ParameterValue": "${DbAdminPass}"
+                                 "ParameterValue": "${env.DbAdminPass}"
                              },
                              {
                                  "ParameterKey": "DbDataSize",
-                                 "ParameterValue": "${DbDataSize}"
+                                 "ParameterValue": "${env.DbDataSize}"
                              },
                              {
                                  "ParameterKey": "DbInstanceName",
-                                 "ParameterValue": "${DbInstanceName}"
+                                 "ParameterValue": "${env.DbInstanceName}"
                              },
                              {
                                  "ParameterKey": "DbInstanceType",
-                                 "ParameterValue": "${DbInstanceType}"
+                                 "ParameterValue": "${env.DbInstanceType}"
                              },
                              {
                                  "ParameterKey": "DbIsMultiAz",
-                                 "ParameterValue": "${DbIsMultiAz}"
+                                 "ParameterValue": "${env.DbIsMultiAz}"
                              },
                              {
                                  "ParameterKey": "DbSnapshotId",
@@ -91,27 +91,27 @@ pipeline {
                              },
                              {
                                  "ParameterKey": "DbSecurityGroup",
-                                 "ParameterValue": "${DbSecurityGroup}"
+                                 "ParameterValue": "${env.DbSecurityGroup}"
                              },
                              {
                                  "ParameterKey": "DbStorageIops",
-                                 "ParameterValue": "${DbStorageIops}"
+                                 "ParameterValue": "${env.DbStorageIops}"
                              },
                              {
                                  "ParameterKey": "DbStorageType",
-                                 "ParameterValue": "${DbStorageType}"
+                                 "ParameterValue": "${env.DbStorageType}"
                              },
                              {
                                  "ParameterKey": "DbSubnets",
-                                 "ParameterValue": "${DbSubnets}"
+                                 "ParameterValue": "${env.DbSubnets}"
                              },
                              {
                                  "ParameterKey": "PgsqlVersion",
-                                 "ParameterValue": "${PgsqlVersion}"
+                                 "ParameterValue": "${env.PgsqlVersion}"
                              },
                              {
                                  "ParameterKey": "TargetVPC",
-                                 "ParameterValue": "${TargetVpc}"
+                                 "ParameterValue": "${env.TargetVpc}"
                              }
                          ]
                    /

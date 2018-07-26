@@ -1,0 +1,259 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Conditions": {
+    "SetBackupBucketName": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "BackupBucketName" }, "" ] }
+      ]
+    },
+    "UseBackupBucketInventoryTracking": {
+      "Fn::Equals": [ { "Ref": "BackupBucketInventoryTracking" }, "true" ]
+    },
+    "UseBackupReportingLocation": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "BackupReportingBucket" }, "" ] }
+      ]
+    },
+    "SetShardBucketName": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "ShardBucketName" }, "" ] }
+      ]
+    },
+    "UseShardBucketInventoryTracking": {
+      "Fn::Equals": [ { "Ref": "ShardBucketInventoryTracking" }, "true" ]
+    },
+    "UseShardReportingLocation": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "ShardReportingBucket" }, "" ] }
+      ]
+    }
+  },
+  "Description": "This template sets up the Buckets used by Artifactory for S3-based storage",
+  "Outputs": {
+    "BackupBucketName": {
+      "Description": "Artifactory S3 backup bucket name.",
+      "Export": {
+        "Name": { "Fn::Sub": "${AWS::StackName}-BackupBucket" }
+      },
+      "Value": { "Ref": "Backups" }
+    },
+    "BackupBucketArn": {
+      "Description": "Artifactory S3 backup bucket ARN.",
+      "Export": {
+        "Name": { "Fn::Sub": "${AWS::StackName}-BackupBucketArn" }
+      },
+      "Value": { "Fn::GetAtt": [ "Backups", "Arn" ] }
+    },
+    "ShardBucketName": {
+      "Description": "Artifactory S3 backup bucket name.",
+      "Export": {
+        "Name": { "Fn::Sub": "${AWS::StackName}-ShardBucket" }
+      },
+      "Value": { "Ref": "Shards" }
+    },
+    "ShardBucketArn": {
+      "Description": "Artifactory S3 backup bucket ARN.",
+      "Export": {
+        "Name": { "Fn::Sub": "${AWS::StackName}-ShardBucketArn" }
+      },
+      "Value": { "Fn::GetAtt": [ "Shards", "Arn" ] }
+    }
+  },
+  "Parameters": {
+    "BackupBucketName": {
+      "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$",
+      "Description": "(Optional) Name to set for S3 Bucket used for longer-term retention of backups. Will be randomly named if left un-set.",
+      "Type": "String"
+    },
+    "BackupBucketInventoryTracking": {
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "false",
+      "Description": "(Optional) Whether to enable generic bucket inventory-tracking. Requires setting of the 'BackupReportingBucket' parameter.",
+      "Type": "String"
+    },
+    "FinalExpirationDays": {
+      "ConstraintDescription": "Must be an integer value greater than '0'.",
+      "Default": "30",
+      "Description": "Number of days to retain objects before aging them out of the bucket",
+      "Type": "Number"
+    },
+    "BackupReportingBucket": {
+      "AllowedPattern": "^arn:.*$|^$",
+      "ConstraintDescription": "String must start with 'arn:' (or be left wholly blank).",
+      "Default": "",
+      "Description": "(Optional) Destination for storing analytics data. Must be provided in ARN format.",
+      "Type": "String"
+    },
+    "RetainIncompleteDays": {
+      "ConstraintDescription": "Must be an integer value between '0' and '30'",
+      "Default": "3",
+      "Description": "Number of days to retain objects that were not completely uploaded.",
+      "MaxValue": "30",
+      "MinValue": "0",
+      "Type": "Number"
+    },
+    "TierToGlacierDays": {
+      "ConstraintDescription": "Must be an integer value between '1' and '30'",
+      "Default": "5",
+      "Description": "Number of days to retain objects in standard storage tier.",
+      "MaxValue": "30",
+      "MinValue": "1",
+      "Type": "Number"
+    },
+    "ShardBucketName": {
+      "AllowedPattern": "^[a-z][a-z0-9-]*[a-z0-9]*$|^$",
+      "Description": "(Optional) Name to set for S3 Bucket used for hosting live Artifactory data. Will be randomly named if left un-set.",
+      "Type": "String"
+    },
+    "ShardBucketInventoryTracking": {
+      "AllowedValues": [
+        "true",
+        "false"
+      ],
+      "Default": "false",
+      "Description": "(Optional) Whether to enable generic bucket inventory-tracking. Requires setting of the 'ShardReportingBucket' parameter.",
+      "Type": "String"
+    },
+    "ShardReportingBucket": {
+      "AllowedPattern": "^arn:.*$|^$",
+      "ConstraintDescription": "String must start with 'arn:' (or be left wholly blank).",
+      "Default": "",
+      "Description": "(Optional) Destination for storing analytics data. Must be provided in ARN format.",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "Backups": {
+      "Properties": {
+        "AccessControl": "BucketOwnerFullControl",
+        "AnalyticsConfigurations": [
+          {
+            "Id": "Archivable",
+            "Prefix": "Backups/",
+            "StorageClassAnalysis": {
+              "DataExport": {
+                "Fn::If": [
+                  "UseBackupReportingLocation",
+                  {
+                    "Destination": {
+                      "BucketArn": { "Ref": "BackupReportingBucket" },
+                      "Format": "CSV",
+                      "Prefix": "StorageReporting/Analytics"
+                    },
+                    "OutputSchemaVersion": "V_1"
+                  },
+                  { "Ref": "AWS::NoValue" }
+                ]
+              }
+            }
+          }
+        ],
+        "BucketName": {
+          "Fn::If": [
+            "SetBackupBucketName",
+            { "Ref": "BackupBucketName" },
+            { "Ref": "AWS::NoValue" }
+          ]
+        },
+        "InventoryConfigurations": [
+          {
+            "Fn::If": [
+              "UseBackupBucketInventoryTracking",
+              {
+                "Id": "BackupsInventory",
+                "Destination": {
+                  "BucketArn": { "Ref": "BackupReportingBucket" },
+                  "Format": "CSV",
+                  "Prefix": "StorageReporting/Inventory"
+                },
+                "Enabled": "true",
+                "IncludedObjectVersions": "Current",
+                "Prefix": "Backups/",
+                "ScheduleFrequency": "Weekly"
+              },
+              { "Ref": "AWS::NoValue" }
+            ]
+          }
+        ],
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": { "Ref": "RetainIncompleteDays" }
+              },
+              "ExpirationInDays": { "Ref": "FinalExpirationDays" },
+              "Id": "BackupTiering",
+              "Prefix": "Backups/",
+              "Status": "Enabled",
+              "Transitions": [
+                {
+                  "StorageClass": "GLACIER",
+                  "TransitionInDays": { "Ref": "TierToGlacierDays" }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "Type": "AWS::S3::Bucket"
+    },
+    "Shards": {
+      "Properties": {
+        "AccessControl": "BucketOwnerFullControl",
+        "AnalyticsConfigurations": [
+          {
+            "Id": "Archivable",
+            "Prefix": "Shards/",
+            "StorageClassAnalysis": {
+              "DataExport": {
+                "Fn::If": [
+                  "UseShardReportingLocation",
+                  {
+                    "Destination": {
+                      "BucketArn": { "Ref": "ShardReportingBucket" },
+                      "Format": "CSV",
+                      "Prefix": "StorageReporting/Analytics"
+                    },
+                    "OutputSchemaVersion": "V_1"
+                  },
+                  { "Ref": "AWS::NoValue" }
+                ]
+              }
+            }
+          }
+        ],
+        "BucketName": {
+          "Fn::If": [
+            "SetShardBucketName",
+            { "Ref": "ShardBucketName" },
+            { "Ref": "AWS::NoValue" }
+          ]
+        },
+        "InventoryConfigurations": [
+          {
+            "Fn::If": [
+              "UseShardBucketInventoryTracking",
+              {
+                "Id": "ShardsInventory",
+                "Destination": {
+                  "BucketArn": { "Ref": "ShardReportingBucket" },
+                  "Format": "CSV",
+                  "Prefix": "StorageReporting/Inventory"
+                },
+                "Enabled": "true",
+                "IncludedObjectVersions": "Current",
+                "Prefix": "Shards/",
+                "ScheduleFrequency": "Weekly"
+              },
+              { "Ref": "AWS::NoValue" }
+            ]
+          }
+        ]
+      },
+      "Type": "AWS::S3::Bucket"
+    }
+  }
+}

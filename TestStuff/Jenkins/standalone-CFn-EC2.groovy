@@ -28,23 +28,18 @@ pipeline {
         string(name: 'GitProjUrl', description: 'SSH URL from which to download the Sonarqube git project')
         string(name: 'GitProjBranch', description: 'Project-branch to use from the Sonarqube git project')
         string(name: 'CfnStackRoot', description: 'Unique token to prepend to all stack-element names')
-        string(name: 'TemplateUrl', description: 'S3-hosted location of template')
+        string(name: 'TemplateUrl', description: 'S3-hosted location of EC2 CFn template')
+        string(name: 'AkaList', defaultValue: '', description: '')
         string(name: 'AmiId', description: 'ID of the AMI from which to launch an instance')
         string(name: 'InstanceType', defaultValue: 't2.xlarge', description: 'Amazon EC2 instance type')
         string(name: 'KeyPairName', description: 'Logical name of instance-provisioner SSH key')
         string(name: 'SecurityGroupIds', description: 'List of security groups to apply to the instance')
         string(name: 'SubnetId', description: 'ID of the subnet to assign to the instance')
-        string(name: 'AppScriptParams', defaultValue: '', description: 'Parameters to pass to application-script')
-        string(name: 'AppScriptUrl', description: '(Optional) S3 URL to the application script in an S3 bucket (s3://). Leave blank to launch without an application script. If specified, an appropriate "InstanceRole" is required')
-        string(name: 'AppVolumeDevice', defaultValue: 'false', description: 'Decision on whether to mount an extra EBS volume. Leave as default ("false") to launch without an extra application volume')
-        string(name: 'AppVolumeMountPath', description: 'Filesystem path to mount the extra app volume. Ignored if "AppVolumeDevice" is false')
-        string(name: 'AppVolumeSize', description: 'Size in GB of the EBS volume to create. Ignored if "AppVolumeDevice" is false')
-        string(name: 'AppVolumeType', description: 'Type of EBS volume to create. Ignored if "AppVolumeDevice" is false')
         string(name: 'ArtifactoryAppHome', description: 'Root-location of non-shared Artifactory components')
         string(name: 'ArtifactoryClusterHome', description: 'Root-location of cluster-shared Artifactory components')
         string(name: 'ArtifactoryClusterKey', description: 'A hexadecimal string used to secure intra-cluster communications (ignored if "ClusterHome" is null; use `openssl rand -hex 16` to generate)')
         string(name: 'ArtifactoryClusterMaster', description: 'Whether this node is a cluster master-node (ignored if "ClusterHome" is null)')
-        string(name: 'ArtifactoryDbHostFqdn', description: 'Fully-qualified domain name of the (externalized) Artifactory configuration database-host/cluster')
+        string(name: 'ArtifactoryDbHost', description: 'Fully-qualified domain name of the (externalized) Artifactory configuration database-host/cluster')
         string(name: 'ArtifactoryDbInstance', description: 'Instance-name of the Artifactory configuration database')
         string(name: 'ArtifactoryDbAdminUser', description: 'Name of the privileged user account used to connect to the Artifactory configuration database')
         string(name: 'ArtifactoryDbAdminPasswd', description: 'Password of the privileged user account used to connect to the Artifactory configuration database')
@@ -63,6 +58,8 @@ pipeline {
         string(name: 'NoUpdates', defaultValue: 'false', description: 'Controls whether to run yum update during a stack update (on the initial instance launch, Watchmaker usually installs updates)')
         string(name: 'PrivateIp', description: '(Optional) Set a static, primary private IP. Leave blank to auto-select a free IP')
         string(name: 'PypiIndexUrl', defaultValue: 'https://pypi.org/simple', description: 'URL to the PyPi Index')
+        string(name: 'ProvisionUser', defaultValue: 'testuser', description: 'Name to use for provisioning-user account (instance default-account)')
+        string(name: 'AdminPubkeyURL', defaultValue: '', description: 'URL to public-key bundle to install into provisioning-user authorized_keys file')
         string(name: 'RootVolumeSize', description: 'Size in GB of the root EBS volume to create. If smaller than AMI default, create operation will fail; If larger, root device-volume partition size will be increased')
         string(name: 'ToggleCfnInitUpdate', description: 'Arbitrary value that forces and instance to be updated')
         string(name: 'WatchmakerAdminGroups', description: '(Optional) Colon-separated list of domain groups that should have admin permissions on the EC2 instance')
@@ -84,32 +81,16 @@ pipeline {
                     text: /
                         [
                             {
+                                "ParameterKey": "AdminPubkeyURL",
+                                "ParameterValue": "${env.AdminPubkeyURL}"
+                            },
+                            {
+                                "ParameterKey": "AkaList",
+                                "ParameterValue": "${env.AkaList}"
+                            },
+                            {
                                 "ParameterKey": "AmiId",
                                 "ParameterValue": "${env.AmiId}"
-                            },
-                            {
-                                "ParameterKey": "AppScriptParams",
-                                "ParameterValue": "${env.AppScriptParams}"
-                            },
-                            {
-                                "ParameterKey": "AppScriptUrl",
-                                "ParameterValue": "${env.AppScriptUrl}"
-                            },
-                            {
-                                "ParameterKey": "AppVolumeDevice",
-                                "ParameterValue": "${env.AppVolumeDevice}"
-                            },
-                            {
-                                "ParameterKey": "AppVolumeMountPath",
-                                "ParameterValue": "${env.AppVolumeMountPath}"
-                            },
-                            {
-                                "ParameterKey": "AppVolumeSize",
-                                "ParameterValue": "${env.AppVolumeSize}"
-                            },
-                            {
-                                "ParameterKey": "AppVolumeType",
-                                "ParameterValue": "${env.AppVolumeType}"
                             },
                             {
                                 "ParameterKey": "ArtifactoryAppHome",
@@ -136,8 +117,8 @@ pipeline {
                                 "ParameterValue": "${env.ArtifactoryDbAdminUser}"
                             },
                             {
-                                "ParameterKey": "ArtifactoryDbHostFqdn",
-                                "ParameterValue": "${env.ArtifactoryDbHostFqdn}"
+                                "ParameterKey": "ArtifactoryDbHost",
+                                "ParameterValue": "${env.ArtifactoryDbHost}"
                             },
                             {
                                 "ParameterKey": "ArtifactoryDbInstance",
@@ -206,6 +187,10 @@ pipeline {
                             {
                                 "ParameterKey": "PrivateIp",
                                 "ParameterValue": "${env.PrivateIp}"
+                            },
+                            {
+                                "ParameterKey": "ProvisionUser",
+                                "ParameterValue": "${env.ProvisionUser}"
                             },
                             {
                                 "ParameterKey": "PypiIndexUrl",

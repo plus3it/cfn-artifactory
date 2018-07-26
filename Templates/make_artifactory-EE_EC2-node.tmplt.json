@@ -16,12 +16,9 @@
         { "Fn::Equals": [ { "Ref": "PrivateIp" }, "" ] }
       ]
     },
-    "CreateAppVolume": {
-      "Fn::Equals": [ { "Ref": "AppVolumeDevice" }, "true" ]
-    },
-    "ExecuteAppScript": {
+    "HaveAkas": {
       "Fn::Not": [
-        { "Fn::Equals": [ { "Ref": "AppScriptUrl" }, "" ] }
+        { "Fn::Equals": [ { "Ref": "AkaList" }, "" ] }
       ]
     },
     "InstallCloudWatchAgent": {
@@ -39,21 +36,14 @@
         { "Fn::Equals": [ { "Ref": "NoReboot" }, "true" ] }
       ]
     },
-    "SupportsNvme": {
-      "Fn::Equals": [
-        {
-          "Fn::FindInMap": [
-            "InstanceTypeMap",
-            { "Ref": "InstanceType" },
-            "SupportsNvme"
-          ]
-        },
-        "true"
-      ]
-    },
     "UseAdminGroups": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "WatchmakerAdminGroups" }, "" ] }
+      ]
+    },
+    "UseAdminPubkeyURL": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "AdminPubkeyURL" }, "" ] }
       ]
     },
     "UseAdminUsers": {
@@ -69,6 +59,11 @@
     "UseEnvironment": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "WatchmakerEnvironment" }, "" ] }
+      ]
+    },
+    "UseKeyPair": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "KeyPairName" }, "" ] }
       ]
     },
     "UseOuPath": {
@@ -88,49 +83,7 @@
     }
   },
   "Description": "This template deploys the Artifactory web-application onto a STIG-hardened EL7-based Linux instance",
-  "Mappings": {
-    "InstanceTypeMap": {
-      "c4.large": {
-        "SupportsNvme": "false"
-      },
-      "c4.xlarge": {
-        "SupportsNvme": "false"
-      },
-      "c5.large": {
-        "SupportsNvme": "true"
-      },
-      "c5.xlarge": {
-        "SupportsNvme": "true"
-      },
-      "m4.large": {
-        "SupportsNvme": "false"
-      },
-      "m4.xlarge": {
-        "SupportsNvme": "false"
-      },
-      "m5.large": {
-        "SupportsNvme": "true"
-      },
-      "m5.xlarge": {
-        "SupportsNvme": "true"
-      },
-      "t2.large": {
-        "SupportsNvme": "false"
-      },
-      "t2.medium": {
-        "SupportsNvme": "false"
-      },
-      "t2.micro": {
-        "SupportsNvme": "false"
-      },
-      "t2.small": {
-        "SupportsNvme": "false"
-      },
-      "t2.xlarge": {
-        "SupportsNvme": "false"
-      }
-    }
-  },
+  "Mappings": {},
   "Metadata": {
     "AWS::CloudFormation::Interface": {
       "ParameterGroups": [
@@ -155,27 +108,14 @@
         },
         {
           "Label": {
-            "default": "EC2 Application EBS Volume"
-          },
-          "Parameters": [
-            "AppVolumeDevice",
-            "AppVolumeMountPath",
-            "AppVolumeSize",
-            "AppVolumeType"
-          ]
-        },
-        {
-          "Label": {
             "default": "Artifactory Configuration Parameters"
           },
           "Parameters": [
-            "AppScriptUrl",
-            "AppScriptParams",
             "ArtifactoryRepoUrl",
             "ArtifactoryRpmName",
             "ArtifactoryAppHome",
             "ArtifactoryClusterHome",
-            "ArtifactoryDbHostFqdn",
+            "ArtifactoryDbHost",
             "ArtifactoryDbInstance",
             "ArtifactoryDbAdminUser",
             "ArtifactoryDbAdminPasswd",
@@ -249,55 +189,18 @@
     }
   },
   "Parameters": {
+    "AdminPubkeyURL": {
+      "AllowedPattern": "^http[s]?://.*|^$",
+      "Description": "(Optional) URL of file containing admin group's SSH public-keys",
+      "Type": "String"
+    },
+    "AkaList": {
+      "Description": "Comma-delimited list of FQDNs that should be accepted as valid names to service requests on behalf of.",
+      "Type": "String"
+    },
     "AmiId": {
       "AllowedPattern": "^ami-[0-9a-z]{8}$|^ami-[0-9a-z]{17}$",
       "Description": "ID of the AMI to launch",
-      "Type": "String"
-    },
-    "AppScriptParams": {
-      "Description": "Parameter string to pass to the application script. Ignored if \"AppScriptUrl\" is blank",
-      "Type": "String"
-    },
-    "AppScriptUrl": {
-      "AllowedPattern": "^$|^https://(.*)$|^s3://(.*)$",
-      "ConstraintDescription": "Must use an S3 URL (starts with \"s3://\")",
-      "Default": "",
-      "Description": "(Optional) S3 URL to the application script in an S3 bucket (s3://). Leave blank to launch without an application script. If specified, an appropriate \"InstanceRole\" is required",
-      "Type": "String"
-    },
-    "AppVolumeDevice": {
-      "AllowedValues": [
-        "true",
-        "false"
-      ],
-      "Default": "false",
-      "Description": "Decision on whether to mount an extra EBS volume. Leave as default (\"false\") to launch without an extra application volume",
-      "Type": "String"
-    },
-    "AppVolumeMountPath": {
-      "AllowedPattern": "/.*",
-      "Default": "/opt/data",
-      "Description": "Filesystem path to mount the extra app volume. Ignored if \"AppVolumeDevice\" is false",
-      "Type": "String"
-    },
-    "AppVolumeSize": {
-      "ConstraintDescription": "Must be between 1GB and 16384GB.",
-      "Default": "1",
-      "Description": "Size in GB of the EBS volume to create. Ignored if \"AppVolumeDevice\" is false",
-      "MaxValue": "16384",
-      "MinValue": "1",
-      "Type": "Number"
-    },
-    "AppVolumeType": {
-      "AllowedValues": [
-        "gp2",
-        "io1",
-        "sc1",
-        "st1",
-        "standard"
-      ],
-      "Default": "gp2",
-      "Description": "Type of EBS volume to create. Ignored if \"AppVolumeDevice\" is false",
       "Type": "String"
     },
     "ArtifactoryAppHome": {
@@ -327,7 +230,7 @@
       "Description": "Whether this node is a cluster's master node (ignored if \"ClusterHome\" is null)",
       "Type": "String"
     },
-    "ArtifactoryDbHostFqdn": {
+    "ArtifactoryDbHost": {
       "Default": "",
       "Description": "Fully-qualified domain name of the (externalized) Artifactory configuration database-host/cluster",
       "Type": "String"
@@ -425,7 +328,7 @@
     },
     "KeyPairName": {
       "Description": "Public/private key pairs allow you to securely connect to your instance after it launches",
-      "Type": "AWS::EC2::KeyPair::KeyName"
+      "Type": "String"
     },
     "NoPublicIp": {
       "AllowedValues": [
@@ -457,6 +360,13 @@
     "PrivateIp": {
       "Default": "",
       "Description": "(Optional) Set a static, primary private IP. Leave blank to auto-select a free IP",
+      "Type": "String"
+    },
+    "ProvisionUser": {
+      "AllowedPattern": "[a-z0-9-]{6,12}",
+      "ConstraintDescription": "Alphanumeric string between 6 and 12 characters.",
+      "Default": "ec2-user",
+      "Description": "Name for remote-administration account",
       "Type": "String"
     },
     "PypiIndexUrl": {
@@ -539,9 +449,54 @@
       },
       "Metadata": {
         "AWS::CloudFormation::Init": {
+          "admkey-install": {
+            "commands": {
+              "1-install-keyfile": {
+                "command": "bash -xe /etc/cfn/scripts/admkey.sh"
+              }
+            },
+            "files": {
+              "/etc/cfn/files/AdminKeys.pub": {
+                "source": { "Ref": "AdminPubkeyURL" },
+                "group": "root",
+                "mode": "000600",
+                "owner": "root"
+              },
+              "/etc/cfn/scripts/admkey.sh": {
+              "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "#!/bin/bash\n\n",
+                      "PROVHOME=$(getent passwd ",
+                      { "Ref": "ProvisionUser" },
+                      " | awk -F\":\" '{print $6}')\n",
+                      "\n",
+                      "install -b -m 000600 -o ",
+                      { "Ref": "ProvisionUser" },
+                      " -g ",
+                      { "Ref": "ProvisionUser" },
+                      " /etc/cfn/files/AdminKeys.pub ${PROVHOME}/.ssh/authorized_keys\n",
+                      "\n"
+                    ]
+                  ]
+                },
+                "group": "root",
+                "mode": "000700",
+                "owner": "root"
+              }
+            }
+          },
           "configSets": {
             "launch": [
               "setup",
+              {
+                "Fn::If": [
+                  "UseAdminPubkeyURL",
+                  "admkey-install",
+                  { "Ref": "AWS::NoValue" }
+                ]
+              },
               {
                 "Fn::If": [
                   "InstallCloudWatchAgent",
@@ -551,13 +506,6 @@
               },
               "watchmaker-install",
               "watchmaker-launch",
-              {
-                "Fn::If": [
-                  "ExecuteAppScript",
-                  "make-app",
-                  { "Ref": "AWS::NoValue" }
-                ]
-              },
               {
                 "Fn::If": [
                   "UseToolBucket",
@@ -578,6 +526,13 @@
               "setup",
               {
                 "Fn::If": [
+                  "UseAdminPubkeyURL",
+                  "admkey-install",
+                  { "Ref": "AWS::NoValue" }
+                ]
+              },
+              {
+                "Fn::If": [
                   "InstallUpdates",
                   "install-updates",
                   { "Ref": "AWS::NoValue" }
@@ -585,13 +540,6 @@
               },
               "watchmaker-install",
               "watchmaker-update",
-              {
-                "Fn::If": [
-                  "ExecuteAppScript",
-                  "make-app",
-                  { "Ref": "AWS::NoValue" }
-                ]
-              },
               "finalize",
               {
                 "Fn::If": [
@@ -791,37 +739,6 @@
               }
             }
           },
-          "make-app": {
-            "commands": {
-              "05-get-appscript": {
-                "command": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "mkdir -p /etc/cfn/scripts &&",
-                      " aws s3 cp ",
-                      { "Ref": "AppScriptUrl" },
-                      " /etc/cfn/scripts/make-app",
-                      " &&",
-                      " chown root:root /etc/cfn/scripts/make-app &&",
-                      " chmod 700 /etc/cfn/scripts/make-app"
-                    ]
-                  ]
-                }
-              },
-              "10-make-app": {
-                "command": {
-                  "Fn::Join": [
-                    "",
-                    [
-                      "bash -xe /etc/cfn/scripts/make-app ",
-                      { "Ref": "AppScriptParams" }
-                    ]
-                  ]
-                }
-              }
-            }
-          },
           "reboot": {
             "commands": {
               "10-reboot": {
@@ -831,29 +748,36 @@
           },
           "run-installer": {
             "commands": {
-              "1-invoke-installer": {
-                "command": "bash -xe /etc/cfn/scripts/ArtifactoryEE-installer.sh"
-              }
-            },
-            "files": {
-              "/etc/cfn/scripts/ArtifactoryEE-installer.sh": {
-                "source": {
+              "01-get-installer_script": {
+                "command": {
                   "Fn::Join": [
                     "",
                     [
-                      "https://s3.",
-                      { "Ref": "AWS::Region" },
-                      ".",
-                      { "Ref": "AWS::URLSuffix" },
-                      "/",
-                      { "Ref": "ArtifactoryToolBucket" },
-                      "/SupportFiles/artifactory-EE_setup.sh"
+                      "bash -xec \"install -b -m 000755 <(",
+                       "aws s3 cp s3://",
+                       { "Ref": "ArtifactoryToolBucket" },
+                       "/SupportFiles/artifactory-EE_setup.sh -)  ",
+                       "/etc/cfn/scripts/ArtifactoryEE-installer.sh\""
                     ]
                   ]
-                },
-                "group": "root",
-                "mode": "000755",
-                "owner": "root"
+                }
+              },
+              "02-get-proxy_template": {
+                "command": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "bash -xec \"install -b -m 000600 <(",
+                       "aws s3 cp s3://",
+                       { "Ref": "ArtifactoryToolBucket" },
+                      "/SupportFiles/AFproxy-EE.conf.tmpl -) ",
+                      "/etc/cfn/files/AFproxy.conf.tmpl\""
+                    ]
+                  ]
+                }
+              },
+              "10-invoke-installer": {
+                "command": "bash -xe /etc/cfn/scripts/ArtifactoryEE-installer.sh"
               }
             }
           },
@@ -988,7 +912,7 @@
                        { "Ref": "ArtifactoryClusterMaster" },
                        "\n",
                       "ARTIFACTORY_DB_HOSTFQDN=",
-                       { "Ref": "ArtifactoryDbHostFqdn" },
+                       { "Ref": "ArtifactoryDbHost" },
                        "\n",
                       "ARTIFACTORY_DB_INSTANCE=",
                        { "Ref": "ArtifactoryDbInstance" },
@@ -998,6 +922,9 @@
                        "\n",
                       "ARTIFACTORY_DB_PASSWD=",
                        { "Ref": "ArtifactoryDbAdminPasswd" },
+                       "\n",
+                      "ARTIFACTORY_PROXY_AKAS=",
+                       { "Ref": "AkaList" },
                        "\n",
                       "ARTIFACTORY_S3_BAKUP_LOCS=",
                        { "Ref": "ArtifactoryS3BakupLocs" },
@@ -1133,7 +1060,7 @@
                       "type=postgresql\n",
                       "driver=org.postgresql.Driver\n",
                       "url=jdbc:postgresql://",
-                        { "Ref": "ArtifactoryDbHostFqdn" },
+                        { "Ref": "ArtifactoryDbHost" },
                         ":5432/",
                         { "Ref": "ArtifactoryDbInstance" },
                         "\n",
@@ -1406,23 +1333,9 @@
             "DeviceName": "/dev/sda1",
             "Ebs": {
               "DeleteOnTermination": "true",
-              "VolumeSize" : { "Ref" : "RootVolumeSize" },
+              "VolumeSize": { "Ref": "RootVolumeSize" },
               "VolumeType": "gp2"
             }
-          },
-          {
-            "Fn::If": [
-              "CreateAppVolume",
-              {
-                "DeviceName": "/dev/xvdf",
-                "Ebs": {
-                  "DeleteOnTermination": "true",
-                  "VolumeSize": { "Ref": "AppVolumeSize" },
-                  "VolumeType": { "Ref": "AppVolumeType" }
-                }
-              },
-              { "Ref": "AWS::NoValue" }
-            ]
           }
         ],
         "IamInstanceProfile": {
@@ -1434,7 +1347,13 @@
         },
         "ImageId": { "Ref": "AmiId" },
         "InstanceType": { "Ref": "InstanceType" },
-        "KeyName": { "Ref": "KeyPairName" },
+        "KeyName": {
+          "Fn::If": [
+            "UseKeyPair",
+            { "Ref": "KeyPairName" },
+            { "Ref": "AWS::NoValue" }
+          ]
+        },
         "NetworkInterfaces": [
           {
             "AssociatePublicIpAddress": {
@@ -1485,6 +1404,13 @@
                 "\n",
                 "#cloud-config\n",
                 "\n",
+                "system_info:\n",
+                "  default_user:\n",
+                "    name: ",
+                     { "Ref": "ProvisionUser" },
+                     "\n",
+                "\n",
+                "#cloud-config\n",
                 "hostname: ",
                 { "Ref": "WatchmakerComputerName" },
                 "\n",
@@ -1493,42 +1419,6 @@
                 "  mode: auto\n",
                 "  devices: [ '/dev/xvda', '/dev/xvda2', '/dev/nvme0n1p2' ]\n",
                 "  ignore_growroot_disabled: false\n",
-                "\n",
-                {
-                  "Fn::If": [
-                    "CreateAppVolume",
-                    {
-                      "Fn::Join": [
-                        "",
-                        [
-                          "bootcmd:\n",
-                          "- cloud-init-per instance mkfs-appvolume mkfs -t ext4 ",
-                          {
-                            "Fn::If": [
-                              "SupportsNvme",
-                              "/dev/nvme1n1",
-                              "/dev/xvdf"
-                            ]
-                          },
-                          "\n",
-                          "mounts:\n",
-                          "- [ ",
-                          {
-                            "Fn::If": [
-                              "SupportsNvme",
-                              "/dev/nvme1n1",
-                              "/dev/xvdf"
-                            ]
-                          },
-                          ", ",
-                          { "Ref": "AppVolumeMountPath" },
-                          " ]\n"
-                        ]
-                      ]
-                    },
-                    { "Ref": "AWS::NoValue" }
-                  ]
-                },
                 "\n",
                 "--===============3585321300151562773==\n",
                 "Content-Type: text/x-shellscript; charset=\"us-ascii\"\n",

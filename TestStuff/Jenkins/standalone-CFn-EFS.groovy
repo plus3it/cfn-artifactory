@@ -30,7 +30,6 @@ pipeline {
         string(name: 'CfnStackRoot', description: 'Unique token to prepend to all stack-element names')
         string(name: 'EfsSg', description: 'List of security groups to apply to the EFS shares')
         string(name: 'EfsSubnet', description: 'List of subnets to build EFS service-endpoints into')
-        string(name: 'ServiceTld', defaultValue: 'amazonaws.com', description: 'TLD of the created EFS-endpoint.')
     }
 
     stages {
@@ -45,15 +44,11 @@ pipeline {
                          [
                              {
                                  "ParameterKey": "EfsSg",
-                                 "ParameterValue": "${EfsSg}"
+                                 "ParameterValue": "${env.EfsSg}"
                              },
                              {
                                  "ParameterKey": "EfsSubnet",
-                                 "ParameterValue": "${EfsSubnet}"
-                             },
-                             {
-                                 "ParameterKey": "ServiceTld",
-                                 "ParameterValue": "${ServiceTld}"
+                                 "ParameterValue": "${env.EfsSubnet}"
                              }
                          ]
                    /
@@ -101,7 +96,7 @@ pipeline {
                         echo "Attempting to create stack ${CfnStackRoot}-EfsRes..."
                         aws --region "${AwsRegion}" cloudformation create-stack --stack-name "${CfnStackRoot}-EfsRes" \
                           --disable-rollback --capabilities CAPABILITY_NAMED_IAM \
-                          --template-body file://Templates/make_artifactory-PRO_EFS.tmplt.json \
+                          --template-body file://Templates/make_artifactory-EE_EFS.tmplt.json \
                           --parameters file://Efs.parms.json
  
                         sleep 15

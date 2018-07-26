@@ -28,12 +28,16 @@ pipeline {
         string(name: 'GitProjUrl', description: 'SSH URL from which to download the Sonarqube git project')
         string(name: 'GitProjBranch', description: 'Project-branch to use from the Sonarqube git project')
         string(name: 'CfnStackRoot', description: 'Unique token to prepend to all stack-element names')
-        string(name: 'BackupBucket', description: '')
-        string(name: 'BucketInventoryTracking', defaultValue: 'false', description: '')
+        string(name: 'BackupBucketName', defaultValue: '', description: '')
+        string(name: 'BackupBucketInventoryTracking', defaultValue: 'false', description: '')
         string(name: 'FinalExpirationDays', defaultValue: '30', description: '')
-        string(name: 'ReportingBucket', description: '')
+        string(name: 'BackupReportingBucket', defaultValue: '', description: '')
         string(name: 'RetainIncompleteDays', defaultValue: '3', description: '')
-        string(name: 'TierToS3Days', defaultValue: '5', description: '')
+        string(name: 'TierToGlacierDays', defaultValue: '5', description: '')
+        string(name: 'ShardBucketName', defaultValue: '', description: '')
+        string(name: 'ShardBucketInventoryTracking', defaultValue: 'false', description: '')
+        string(name: 'ShardReportingBucket', defaultValue: '', description: '')
+
     }
 
     stages {
@@ -47,28 +51,40 @@ pipeline {
                     text: /
                          [
                              {
-                                 "ParameterKey": "BackupBucket",
-                                 "ParameterValue": "${BackupBucket}"
+                                 "ParameterKey": "BackupBucketName",
+                                 "ParameterValue": "${env.BackupBucketName}"
                              },
                              {
-                                "ParameterKey": "BucketInventoryTracking",
-                                 "ParameterValue": "${BucketInventoryTracking}"
+                                 "ParameterKey": "BackupBucketInventoryTracking",
+                                 "ParameterValue": "${env.BackupBucketInventoryTracking}"
                              },
                              {
                                  "ParameterKey": "FinalExpirationDays",
-                                 "ParameterValue": "${FinalExpirationDays}"
+                                 "ParameterValue": "${env.FinalExpirationDays}"
                              },
                              {
-                                 "ParameterKey": "ReportingBucket",
-                                 "ParameterValue": "${ReportingBucket}"
+                                 "ParameterKey": "BackupReportingBucket",
+                                 "ParameterValue": "${env.BackupReportingBucket}"
                              },
                              {
                                  "ParameterKey": "RetainIncompleteDays",
-                                 "ParameterValue": "${RetainIncompleteDays}"
+                                 "ParameterValue": "${env.RetainIncompleteDays}"
                              },
                              {
-                                 "ParameterKey": "TierToS3Days",
-                                 "ParameterValue": "${TierToS3Days}"
+                                 "ParameterKey": "TierToGlacierDays",
+                                 "ParameterValue": "${env.TierToGlacierDays}"
+                             },
+                             {
+                                 "ParameterKey": "ShardBucketName",
+                                 "ParameterValue": "${env.ShardBucketName}"
+                             },
+                             {
+                                 "ParameterKey": "ShardBucketInventoryTracking",
+                                 "ParameterValue": "${env.ShardBucketInventoryTracking}"
+                             },
+                             {
+                                 "ParameterKey": "ShardReportingBucket",
+                                 "ParameterValue": "${env.ShardReportingBucket}"
                              }
                          ]
                    /
@@ -116,7 +132,7 @@ pipeline {
                         echo "Attempting to create stack ${CfnStackRoot}-S3Res..."
                         aws --region "${AwsRegion}" cloudformation create-stack --stack-name "${CfnStackRoot}-S3Res" \
                           --disable-rollback --capabilities CAPABILITY_NAMED_IAM \
-                          --template-body file://Templates/make_artifactory-PRO_S3-buckets.tmplt.json \
+                          --template-body file://Templates/make_artifactory-EE_S3-buckets.tmplt.json \
                           --parameters file://S3Bucket.parms.json
  
                         sleep 15

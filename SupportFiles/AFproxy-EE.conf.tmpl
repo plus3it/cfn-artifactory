@@ -1,0 +1,49 @@
+## server configuration
+server {
+
+  listen 80 ;
+  server_name ~(?<repo>.+)\.__AF-FQDN__ __AF-FQDN__;
+
+  ## Application specific logs
+  access_log /var/log/nginx/__AF-FQDN__-access.log;
+  error_log /var/log/nginx/__AF-FQDN__-error.log;
+
+  if ($http_x_forwarded_proto != "https") {
+    rewrite ^/artifactory/?(/webapp)?$ https://$host/artifactory/webapp/ redirect;
+    rewrite ^/$ https://$host/artifactory/webapp/ redirect;
+    rewrite ^/(v1|v2)/(.*) https://$host/artifactory/api/docker/$repo/$1/$2;
+  }
+
+  if ($http_x_forwarded_proto = "https") {
+    rewrite ^/$ https://$host/artifactory/webapp/ redirect;
+    rewrite ^/artifactory/?(/webapp)?$ https://$host/artifactory/webapp/ redirect;
+    rewrite ^/(v1|v2)/(.*) /artifactory/api/docker/$repo/$1/$2;
+  }
+
+  chunked_transfer_encoding on;
+  # Cap the size of uploads ('0' is 'unlimited')
+  client_max_body_size      __AF_CLIENT_MAX__; # Should effectively remove any size-limits
+  proxy_max_temp_file_size  0;
+  proxy_temp_path           __AF_CLUSTER_HOME__/upload_temp/;
+  client_body_temp_path     __AF_CLUSTER_HOME__/upload_temp/;
+  proxy_redirect            off;
+  # Turn off buffering so we don't overflow the filesystem
+  proxy_buffering           off;
+
+  location /artifactory/ {
+  # Allow up to two hours (60*60*2 seconds) to between packets in a proxy-request
+  proxy_read_timeout  7200; # Should be ignored since 'proxy_buffering' is disabled
+  proxy_send_timeout  7200; # Should be ignored since 'proxy_buffering' is disabled
+  proxy_pass_header   Server;
+  proxy_cookie_path   ~*^/.* /;
+  if ( $request_uri ~ ^/artifactory/(.*)$ ) {
+    proxy_pass          http://localhost:8081/artifactory/$1;
+  }
+  proxy_pass          http://localhost:8081/artifactory/;
+  proxy_set_header    X-Artifactory-Override-Base-Url https://$host/artifactory;
+  proxy_set_header    X-Forwarded-Port  $server_port;
+  proxy_set_header    X-Forwarded-Proto $http_x_forwarded_proto;
+  proxy_set_header    Host              $http_host;
+  proxy_set_header    X-Forwarded-For   $proxy_add_x_forwarded_for;
+  }
+}
