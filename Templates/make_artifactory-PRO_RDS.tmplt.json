@@ -1,9 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Conditions": {
-    "SetIops": {
-      "Fn::Equals": [ { "Ref": "DbStorageType" }, "io1" ]
-    },
+    "SetIops": { "Fn::Equals": [ { "Ref": "DbStorageType" }, "io1" ] },
     "SetNodeName": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "DbNodeName" }, "" ] }
@@ -13,24 +11,66 @@
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "DbSnapshotId" }, "" ] }
       ]
+    },
+    "UsePgSqlMinor": {
+      "Fn::Equals": [
+        {
+          "Fn::Select": [
+            "0",
+            {
+              "Fn::Split": [
+                ".",
+                { "Ref": "PgsqlVersion" }
+              ]
+            }
+          ]
+        },
+        "9"
+      ]
     }
   },
-  "Description": "This template deployes a small, single-AZ PGSQL database to support Artifactory.",
+  "Description": "This template deployes a small, single- or multi-AZ PGSQL database to support Artifactory.",
   "Mappings": {},
-  "Metadata": {},
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "RDS Configuration"
+          },
+          "Parameters": [
+            "DbInstanceType",
+            "PgsqlVersion",
+            "DbNodeName",
+            "DbInstanceName",
+            "DbSnapshotId",
+            "DbAdminName",
+            "DbAdminPass",
+            "DbIsMultiAz",
+            "DbDataSize",
+            "DbStorageType",
+            "DbStorageIops",
+            "TargetVPC",
+            "DbSubnets",
+            "DbSecurityGroup"
+          ]
+        }
+      ]
+    }
+  },
   "Outputs": {
+    "RdsDbInstanceName": {
+      "Description": "RDS DB's instance-name.",
+      "Value": { "Ref": "DbInstanceName" }
+    },
+    "RdsDbUserName": {
+      "Description": "RDS DB's root user name.",
+      "Value": { "Ref": "DbAdminName" }
+    },
     "RdsEndpointAddress": {
       "Description": "RDS DB's endpoint FQDN.",
-      "Export": {
-        "Name": {
-          "Fn::Sub": "${AWS::StackName}-RdsEndpointAddress"
-        }
-      },
-      "Value": {
-        "Fn::GetAtt": [
-          "RDSdb",
-          "Endpoint.Address"
-        ]
+      "Export": { "Name": { "Fn::Sub": "${AWS::StackName}-RdsEndpointAddress" } },
+      "Value": { "Fn::GetAtt": [ "RDSdb", "Endpoint.Address" ]
       }
     }
   },
@@ -66,6 +106,10 @@
         "db.t2.large",
         "db.t2.xlarge",
         "db.t2.2xlarge",
+        "db.m5.large",
+        "db.m5.xlarge",
+        "db.m5.2xlarge",
+        "db.m5.4xlarge",
         "db.m4.large",
         "db.m4.xlarge",
         "db.m4.2xlarge",
@@ -83,7 +127,7 @@
         "db.r3.2xlarge",
         "db.r3.4xlarge"
       ],
-      "Default": "db.t2.small",
+      "Default": "db.t2.large",
       "Description": "Amazon RDS instance type",
       "Type": "String"
     },
@@ -97,7 +141,7 @@
       "Type": "String"
     },
     "DbNodeName": {
-      "Description": "NodeName of the Artifactory database.",
+      "Description": "NodeName of the Artifactory database (Optional: name will be generated if left null).",
       "Type": "String"
     },
     "DbSecurityGroup": {
@@ -133,11 +177,20 @@
     },
     "PgsqlVersion": {
       "AllowedValues": [
+        "10.4",
+        "10.3",
+        "10.1",
+        "9.6.10",
+        "9.6.9",
+        "9.6.8",
         "9.6.6",
         "9.6.5",
         "9.6.3",
         "9.6.2",
         "9.6.1",
+        "9.5.14",
+        "9.5.13",
+        "9.5.12",
         "9.5.10",
         "9.5.9",
         "9.5.7",
@@ -145,7 +198,7 @@
         "9.5.4",
         "9.5.2"
       ],
-      "Default": "9.6.3",
+      "Default": "9.6.10",
       "Description": "The X.Y.Z version of the PostGreSQL database to deploy.",
       "Type": "String"
     },
@@ -178,6 +231,14 @@
             { "Ref": "DbInstanceName" }
           ]
         },
+        "DBParameterGroupName": { "Ref": "RDSdbParmGrp" },
+        "DBSnapshotIdentifier": {
+          "Fn::If": [
+            "UseDbSnapshot",
+            { "Ref": "DbSnapshotId" },
+            { "Ref": "AWS::NoValue" }
+          ]
+        },
         "DBSubnetGroupName": { "Ref": "RDSdbSubnetGroup" },
         "Engine": "postgres",
         "EngineVersion": { "Ref": "PgsqlVersion" },
@@ -200,13 +261,6 @@
         "PreferredBackupWindow": "23:30-00:00",
         "PreferredMaintenanceWindow": "sun:00:30-sun:01:00",
         "PubliclyAccessible": "false",
-        "DBSnapshotIdentifier": {
-          "Fn::If": [
-            "UseDbSnapshot",
-            { "Ref": "DbSnapshotId" },
-            { "Ref": "AWS::NoValue" }
-          ]
-        },
         "StorageType": { "Ref": "DbStorageType" },
         "Tags": [
           {
@@ -217,6 +271,56 @@
         "VPCSecurityGroups": { "Ref": "DbSecurityGroup" }
       },
       "Type": "AWS::RDS::DBInstance"
+    },
+    "RDSdbParmGrp": {
+      "Properties": {
+        "Description": "Parameters used to modify database behavior and performance characteristics",
+        "Family": {
+          "Fn::Join": [
+            "",
+            [
+              "postgres",
+              {
+                "Fn::Select": [
+                  "0",
+                  {
+                    "Fn::Split": [
+                      ".",
+                      { "Ref": "PgsqlVersion" }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Fn::If": [
+                  "UsePgSqlMinor",
+                  {
+                    "Fn::Join": [
+                      "",
+                      [
+                        ".",
+                        {
+                          "Fn::Select": [
+                            "1",
+                            {
+                              "Fn::Split": [
+                                ".",
+                                { "Ref": "PgsqlVersion" }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    ]
+                  },
+                  { "Ref": "AWS::NoValue" }
+                ]
+              }
+            ]
+          ]
+        }
+      },
+      "Type": "AWS::RDS::DBParameterGroup"
     },
     "RDSdbSubnetGroup": {
       "Properties": {

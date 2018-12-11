@@ -1,25 +1,31 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "This template sets up the S3 Bucket used by an Artifactory instance for artifact storage.",
+  "Conditions": {
+    "SetNodeName": {
+      "Fn::Not": [
+        { "Fn::Equals": [ { "Ref": "DbHostName" }, "" ] }
+      ]
+    },
+    "UsePgSqlMinor": {
+      "Fn::Equals": [
+        {
+          "Fn::Select": [
+            "0",
+            {
+              "Fn::Split": [
+                ".",
+                { "Ref": "PgsqlVersion" }
+              ]
+            }
+          ]
+        },
+        "9"
+      ]
+    }
+  },
+  "Description": "This template sets up the RDS database used by an Artifactory instance for storing configuration and metadata tracking.",
   "Parameters": {
-    "DbHostName": {
-      "Description": "Service hostname for the RDS Instance",
-      "Type": "String",
-      "MinLength": "1",
-      "MaxLength": "64",
-      "AllowedPattern": "^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]*$"
-    },
-    "DbCatlogTable": {
-      "Description": "Name of the PostGreSQL catalog/schema table.",
-      "Type": "String",
-      "MinLength": "1",
-      "MaxLength": "64",
-      "AllowedPattern": "^[a-zA-Z][a-zA-Z0-9_]*[a-zA-Z0-9]*$"
-    },
     "DBInstanceClass": {
-      "Description": "Instance-type(s) hosting the database service.",
-      "Type": "String",
-      "Default": "db.t2.micro",
       "AllowedValues": [
         "db.t2.micro",
         "db.t2.small",
@@ -33,92 +39,183 @@
         "db.m4.xlarge",
         "db.m4.2xlarge",
         "db.m4.4xlarge",
-        "db.m4.10xlarge",
+        "db.m5.large",
+        "db.m5.xlarge",
+        "db.m5.2xlarge",
+        "db.m5.4xlarge",
         "db.r3.large",
         "db.r3.xlarge",
         "db.r3.2xlarge",
         "db.r3.4xlarge",
-        "db.r3.8xlarge"
-      ]
+        "db.r4.large",
+        "db.r4.xlarge",
+        "db.r4.2xlarge",
+        "db.r4.4xlarge"
+      ],
+      "Default": "db.m5.large",
+      "Description": "Instance-type(s) hosting the database service.",
+      "Type": "String"
+    },
+    "DbCatlogTable": {
+      "AllowedPattern": "^[a-zA-Z][a-zA-Z0-9_]*[a-zA-Z0-9]*$",
+      "Description": "Name of the PostGreSQL catalog/schema table.",
+      "MaxLength": "64",
+      "MinLength": "1",
+      "Type": "String"
+    },
+    "DbHostName": {
+      "AllowedPattern": "^$|^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]*$",
+      "Description": "Service hostname for the RDS Instance",
+      "MaxLength": "64",
+      "Type": "String"
     },
     "DbStorageSize": {
-      "Description": "Size (in GiB) of the PGSQL database.",
-      "Type": "Number",
+      "ConstraintDescription": "Must be between 1GB and 16384GB.",
       "Default": "10",
-      "MinValue": "5",
+      "Description": "Size (in GiB) of the PGSQL database.",
       "MaxValue": "16384",
-      "ConstraintDescription": "Must be between 1GB and 16384GB."
+      "MinValue": "5",
+      "Type": "Number"
     },
     "PgsqlAdminName": {
+      "AllowedPattern": "^[a-z][a-z0-9_]*[a-z0-9]*$",
       "Description": "The PGSQL root/admin user.",
-      "Type": "String",
-      "MinLength": "8",
       "MaxLength": "32",
-      "AllowedPattern": "^[a-z][a-z0-9_]*[a-z0-9]*$"
+      "MinLength": "6",
+      "Type": "String"
     },
     "PgsqlAdminPassword": {
       "Description": "The PGSQL root/admin user's password.",
-      "Type": "String",
+      "MaxLength": "32",
       "MinLength": "8",
-      "MaxLength": "32"
-    },
-    "PgsqlVersion": {
-      "Description": "The X.Y.Z version of PostGreSQL to use.",
-      "Type": "String",
-      "Default": "9.6.1"
+      "NoEcho": "true",
+      "Type": "String"
     },
     "PgsqlHa": {
-      "Description": "The EC2 VPC that will host the RDS node(s).",
-      "Type" : "String",
-      "Default": "false",
       "AllowedValues": [
         "false",
         "true"
-      ]
+      ],
+      "Default": "false",
+      "Description": "Whether to make the DB multi-AZ.",
+      "Type": "String"
     },
-    "VpcId" : {
-      "Type" : "AWS::EC2::VPC::Id",
-      "Description" : "ID of an existing Virtual Private Cloud (VPC)."
+    "PgsqlVersion": {
+      "AllowedValues": [
+        "10.4",
+        "10.3",
+        "10.1",
+        "9.6.10",
+        "9.6.9",
+        "9.6.8",
+        "9.6.6",
+        "9.6.5",
+        "9.6.3",
+        "9.6.2",
+        "9.6.1",
+        "9.5.14",
+        "9.5.13",
+        "9.5.12",
+        "9.5.10",
+        "9.5.9",
+        "9.5.7",
+        "9.5.6",
+        "9.5.4",
+        "9.5.2"
+      ],
+      "Default": "9.6.10",
+      "Description": "The X.Y.Z version of PostGreSQL to use.",
+      "Type": "String"
+    },
+    "VpcId": {
+      "Description": "ID of an existing Virtual Private Cloud (VPC).",
+      "Type": "AWS::EC2::VPC::Id"
     }
   },
   "Resources": {
     "PgsqlDb": {
-      "Type": "AWS::RDS::DBInstance",
+      "Metadata": {},
       "Properties": {
-        "PubliclyAccessible": false,
-        "Engine": "postgres",
-        "EngineVersion": {
-           "Ref": "PgsqlVersion"
-        },
-        "MultiAZ": { "Ref": "PgsqlHa"},
-        "AutoMinorVersionUpgrade": true,
-        "PreferredBackupWindow": "05:00-05:30",
-        "BackupRetentionPeriod": 7,
-        "DBName": {
-          "Ref": "DbCatlogTable"
-        },
+        "AllocatedStorage": { "Ref": "DbStorageSize" },
+        "AllowMajorVersionUpgrade": "true",
+        "AutoMinorVersionUpgrade": "true",
+        "BackupRetentionPeriod": "7",
+        "DBInstanceClass": { "Ref": "DBInstanceClass" },
         "DBInstanceIdentifier": {
-          "Ref": "DbHostName"
+          "Fn::If": [
+            "SetNodeName",
+            { "Ref": "DbHostName" },
+            { "Ref": "AWS::NoValue" }
+          ]
         },
-        "MasterUsername": {
-          "Ref": "PgsqlAdminName"
-        },
-        "MasterUserPassword": {
-          "Ref": "PgsqlAdminPassword"
-        },
-        "AllocatedStorage": {
-          "Ref": "DbStorageSize"
-        },
-        "DBInstanceClass": {
-          "Ref": "DBInstanceClass"
-        },
-        "Tags" : [
+        "DBName": { "Ref": "DbCatlogTable" },
+        "DBParameterGroupName": { "Ref": "RDSdbParmGrp" },
+        "Engine": "postgres",
+        "EngineVersion": { "Ref": "PgsqlVersion" },
+        "MasterUserPassword": { "Ref": "PgsqlAdminPassword" },
+        "MasterUsername": { "Ref": "PgsqlAdminName" },
+        "MultiAZ": { "Ref": "PgsqlHa" },
+        "PreferredBackupWindow": "05:00-05:30",
+        "PreferredMaintenanceWindow": "sun:00:30-sun:01:00",
+        "PubliclyAccessible": false,
+        "Tags": [
           {
-            "Key" : "Name",
-            "Value" : "Artifactory PGSQL Database"
+            "Key": "Name",
+            "Value": "Artifactory PGSQL Database"
           }
         ]
-      }
+      },
+      "Type": "AWS::RDS::DBInstance"
+    },
+    "RDSdbParmGrp": {
+      "Properties": {
+        "Description": "Parameters used to modify database behavior and performance characteristics",
+        "Family": {
+          "Fn::Join": [
+            "",
+            [
+              "postgres",
+              {
+                "Fn::Select": [
+                  "0",
+                  {
+                    "Fn::Split": [
+                      ".",
+                      { "Ref": "PgsqlVersion" }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Fn::If": [
+                  "UsePgSqlMinor",
+                  {
+                    "Fn::Join": [
+                      "",
+                      [
+                        ".",
+                        {
+                          "Fn::Select": [
+                            "1",
+                            {
+                              "Fn::Split": [
+                                ".",
+                                { "Ref": "PgsqlVersion" }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    ]
+                  },
+                  { "Ref": "AWS::NoValue" }
+                ]
+              }
+            ]
+          ]
+        }
+      },
+      "Type": "AWS::RDS::DBParameterGroup"
     }
   }
 }
