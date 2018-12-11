@@ -1,6 +1,24 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
-  "Description": "This template sets up the S3 Bucket used by an Artifactory instance for artifact storage.",
+  "Conditions": {
+    "UsePgSqlMinor": {
+      "Fn::Equals": [
+        {
+          "Fn::Select": [
+            "0",
+            {
+              "Fn::Split": [
+                ".",
+                { "Ref": "PgsqlVersion" }
+              ]
+            }
+          ]
+        },
+        "9"
+      ]
+    }
+  },
+  "Description": "This template sets up the RDS database used by an Artifactory instance for storing configuration and metadata tracking.",
   "Parameters": {
     "DbHostName": {
       "Description": "Service hostname for the RDS Instance",
@@ -63,9 +81,31 @@
       "MaxLength": "32"
     },
     "PgsqlVersion": {
+      "AllowedValues": [
+        "10.4",
+        "10.3",
+        "10.1",
+        "9.6.10",
+        "9.6.9",
+        "9.6.8",
+        "9.6.6",
+        "9.6.5",
+        "9.6.3",
+        "9.6.2",
+        "9.6.1",
+        "9.5.14",
+        "9.5.13",
+        "9.5.12",
+        "9.5.10",
+        "9.5.9",
+        "9.5.7",
+        "9.5.6",
+        "9.5.4",
+        "9.5.2"
+      ],
       "Description": "The X.Y.Z version of PostGreSQL to use.",
       "Type": "String",
-      "Default": "9.6.1"
+      "Default": "9.6.10"
     },
     "PgsqlHa": {
       "Description": "The EC2 VPC that will host the RDS node(s).",
@@ -83,6 +123,7 @@
   },
   "Resources": {
     "PgsqlDb": {
+      "Metadata": {},
       "Type": "AWS::RDS::DBInstance",
       "Properties": {
         "PubliclyAccessible": false,
@@ -119,6 +160,56 @@
           }
         ]
       }
+    },
+    "RDSdbParmGrp": {
+      "Properties": {
+        "Description": "Parameters used to modify database behavior and performance characteristics",
+        "Family": {
+          "Fn::Join": [
+            "",
+            [
+              "postgres",
+              {
+                "Fn::Select": [
+                  "0",
+                  {
+                    "Fn::Split": [
+                      ".",
+                      { "Ref": "PgsqlVersion" }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Fn::If": [
+                  "UsePgSqlMinor",
+                  {
+                    "Fn::Join": [
+                      "",
+                      [
+                        ".",
+                        {
+                          "Fn::Select": [
+                            "1",
+                            {
+                              "Fn::Split": [
+                                ".",
+                                { "Ref": "PgsqlVersion" }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    ]
+                  },
+                  { "Ref": "AWS::NoValue" }
+                ]
+              }
+            ]
+          ]
+        }
+      },
+      "Type": "AWS::RDS::DBParameterGroup"
     }
   }
 }
