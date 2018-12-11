@@ -1,9 +1,7 @@
 {
   "AWSTemplateFormatVersion": "2010-09-09",
   "Conditions": {
-    "SetIops": {
-      "Fn::Equals": [ { "Ref": "DbStorageType" }, "io1" ]
-    },
+    "SetIops": { "Fn::Equals": [ { "Ref": "DbStorageType" }, "io1" ] },
     "SetNodeName": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "DbNodeName" }, "" ] }
@@ -41,20 +39,20 @@
             "default": "RDS Configuration"
           },
           "Parameters": [
+            "DbInstanceType",
+            "PgsqlVersion",
+            "DbNodeName",
+            "DbInstanceName",
+            "DbSnapshotId",
             "DbAdminName",
             "DbAdminPass",
-            "DbDataSize",
-            "DbInstanceName",
-            "DbInstanceType",
             "DbIsMultiAz",
-            "DbNodeName",
-            "DbSecurityGroup",
-            "DbSnapshotId",
-            "DbStorageIops",
+            "DbDataSize",
             "DbStorageType",
+            "DbStorageIops",
+            "TargetVPC",
             "DbSubnets",
-            "PgsqlVersion",
-            "TargetVPC"
+            "DbSecurityGroup"
           ]
         }
       ]
@@ -72,7 +70,8 @@
     "RdsEndpointAddress": {
       "Description": "RDS DB's endpoint FQDN.",
       "Export": { "Name": { "Fn::Sub": "${AWS::StackName}-RdsEndpointAddress" } },
-      "Value": { "Fn::GetAtt": [ "RDSdb", "Endpoint.Address" ] }
+      "Value": { "Fn::GetAtt": [ "RDSdb", "Endpoint.Address" ]
+      }
     }
   },
   "Parameters": {
@@ -142,7 +141,7 @@
       "Type": "String"
     },
     "DbNodeName": {
-      "Description": "NodeName of the Artifactory database.",
+      "Description": "NodeName of the Artifactory database (Optional: name will be generated if left null).",
       "Type": "String"
     },
     "DbSecurityGroup": {
