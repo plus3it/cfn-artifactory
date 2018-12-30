@@ -16,11 +16,6 @@
         { "Fn::Equals": [ { "Ref": "PrivateIp" }, "" ] }
       ]
     },
-    "HaveAkas": {
-      "Fn::Not": [
-        { "Fn::Equals": [ { "Ref": "AkaList" }, "" ] }
-      ]
-    },
     "InstallCloudWatchAgent": {
       "Fn::Not": [
         { "Fn::Equals": [ { "Ref": "CloudWatchAgentUrl" }, "" ] }
@@ -201,7 +196,7 @@
     "AmiId": {
       "AllowedPattern": "^ami-[0-9a-z]{8}$|^ami-[0-9a-z]{17}$",
       "Description": "ID of the AMI to launch",
-      "Type": "String"
+      "Type": "AWS::EC2::Image::Id"
     },
     "ArtifactoryAppHome": {
       "AllowedPattern": "^/.*$|^$",
@@ -1332,7 +1327,7 @@
           {
             "DeviceName": "/dev/sda1",
             "Ebs": {
-              "DeleteOnTermination": "true",
+              "DeleteOnTermination": true,
               "VolumeSize": { "Ref": "RootVolumeSize" },
               "VolumeType": "gp2"
             }
@@ -1359,8 +1354,8 @@
             "AssociatePublicIpAddress": {
               "Fn::If": [
                 "AssignPublicIp",
-                "true",
-                "false"
+                true,
+                false
               ]
             },
             "DeviceIndex": "0",

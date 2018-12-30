@@ -36,13 +36,6 @@
     }
   },
   "Parameters": {
-    "BackendTimeout": {
-      "Default": "600",
-      "Description": "How long - in seconds - back-end connection may be idle before attempting session-cleanup",
-      "MinValue": "60",
-      "MaxValue": "3600",
-      "Type": "Number"
-    },
     "HaSubnets": {
       "Description": "Select three subnets - each from different Availability Zones.",
       "Type": "List<AWS::EC2::Subnet::Id>"
@@ -143,7 +136,7 @@
     "ArtifactoryPubAlbTgroup": {
       "Properties": {
         "HealthCheckPath": "/index.html",
-        "HealthyThresholdCount": "5",
+        "HealthyThresholdCount": 5,
         "Name": {
           "Fn::Join": [
             "-",
@@ -173,7 +166,7 @@
             "Port": { "Ref": "ArtifactoryServicePort" }
           }
         ],
-        "UnhealthyThresholdCount": "2",
+        "UnhealthyThresholdCount": 2,
         "VpcId": { "Ref": "TargetVPC" }
       },
       "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup"

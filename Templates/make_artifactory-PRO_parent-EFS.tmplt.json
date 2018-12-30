@@ -491,7 +491,6 @@
   },
   "Resources": {
     "Ec2Res": {
-      "DependsOn": "RdsRes",
       "Properties": {
         "Parameters": {
           "AdminPubkeyURL": { "Ref": "AdminPubkeyURL" },
@@ -586,7 +585,7 @@
           "ServiceTld": { "Ref": "ServiceTld" }
         },
         "TemplateURL": { "Ref": "EfsTemplate" },
-        "TimeoutInMinutes": "10"
+        "TimeoutInMinutes": 10
       },
       "Type": "AWS::CloudFormation::Stack"
     },
@@ -618,12 +617,11 @@
           "TargetVPC": { "Ref": "TargetVPC" }
         },
         "TemplateURL": { "Ref": "ElbTemplate" },
-        "TimeoutInMinutes": "10"
+        "TimeoutInMinutes": 10
       },
       "Type": "AWS::CloudFormation::Stack"
     },
     "IamRes": {
-      "DependsOn": "S3Res",
       "Properties": {
         "Parameters": {
           "BackupBucketArn": {
@@ -632,12 +630,11 @@
           "RolePrefix": { "Ref": "RolePrefix" }
         },
         "TemplateURL": { "Ref": "IamTemplateUri" },
-        "TimeoutInMinutes": "10"
+        "TimeoutInMinutes": 10
       },
       "Type": "AWS::CloudFormation::Stack"
     },
     "RdsRes": {
-      "DependsOn": "SgRes",
       "Properties": {
         "Parameters": {
           "DbAdminName": { "Ref": "DbAdminName" },
@@ -671,7 +668,7 @@
           "BackupBucket": { "Ref": "BackupBucket" }
         },
         "TemplateURL": { "Ref": "BucketTemplateUri" },
-        "TimeoutInMinutes": "10"
+        "TimeoutInMinutes": 10
       },
       "Type": "AWS::CloudFormation::Stack"
     },
@@ -681,7 +678,7 @@
           "TargetVPC": { "Ref": "TargetVPC" }
         },
         "TemplateURL": { "Ref": "SgTemplateUri" },
-        "TimeoutInMinutes": "10"
+        "TimeoutInMinutes": 10
       },
       "Type": "AWS::CloudFormation::Stack"
     }

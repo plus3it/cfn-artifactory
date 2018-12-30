@@ -11,11 +11,6 @@
         { "Fn::Equals": [ { "Ref": "NoPublicIp" }, "true" ] }
       ]
     },
-    "HaveAkas": {
-      "Fn::Not": [
-        { "Fn::Equals": [ { "Ref": "AkaList" }, "" ] }
-      ]
-    },
     "NotGenFive": {
       "Fn::Not": [
         {
@@ -131,11 +126,9 @@
           },
           "Parameters": [
             "S3BackupBucket",
-            "AppVolumeDevice",
             "AppVolumeMountPath",
             "AppVolumeSize",
             "AppVolumeType",
-            "BackupVolumeDevice",
             "BackupVolumeMountPath",
             "BackupVolumeSize",
             "BackupVolumeType"
@@ -181,16 +174,7 @@
     "AmiId": {
       "AllowedPattern": "^ami-[0-9a-z]{8}$|^ami-[0-9a-z]{17}$",
       "Description": "ID of the AMI to launch",
-      "Type": "String"
-    },
-    "AppVolumeDevice": {
-      "AllowedValues": [
-        "false",
-        "true"
-      ],
-      "Default": "false",
-      "Description": "(Vestigial) Whether to use an EBS-based backup-staging location",
-      "Type": "String"
+      "Type": "AWS::EC2::Image::Id"
     },
     "AppVolumeMountPath": {
       "AllowedPattern": "/.*",
@@ -272,15 +256,6 @@
     "ArtifactoryRpm": {
       "Default": "jfrog-artifactory-pro",
       "Description": "Name of the Artifactory installation-RPM.",
-      "Type": "String"
-    },
-    "BackupVolumeDevice": {
-      "AllowedValues": [
-        "false",
-        "true"
-      ],
-      "Default": "false",
-      "Description": "(Vestigial) Whether to use an EBS-based backup-staging location",
       "Type": "String"
     },
     "BackupVolumeMountPath": {
@@ -991,7 +966,7 @@
           {
             "DeviceName": "/dev/sda1",
             "Ebs": {
-              "DeleteOnTermination": "true",
+              "DeleteOnTermination": true,
               "VolumeSize" : { "Ref" : "RootVolumeSize" },
               "VolumeType": "gp2"
             }
@@ -1023,7 +998,7 @@
                 "Ebs": {
                   "VolumeSize" : { "Ref" : "AppVolumeSize" },
                   "VolumeType" : { "Ref" : "AppVolumeType" },
-                  "DeleteOnTermination" : "true"
+                  "DeleteOnTermination" : true
                 }
               }
             ]
@@ -1055,7 +1030,7 @@
                 "Ebs": {
                   "VolumeSize" : { "Ref" : "BackupVolumeSize" },
                   "VolumeType" : { "Ref" : "BackupVolumeType" },
-                  "DeleteOnTermination" : "true"
+                  "DeleteOnTermination" : true
                 }
               }
             ]
@@ -1076,8 +1051,8 @@
             "AssociatePublicIpAddress": {
               "Fn::If": [
                 "AssignPublicIp",
-                "true",
-                "false"
+                true,
+                false
               ]
             },
             "DeviceIndex": "0",
