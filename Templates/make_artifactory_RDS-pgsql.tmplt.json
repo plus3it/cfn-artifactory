@@ -126,10 +126,6 @@
       "Default": "9.6.10",
       "Description": "The X.Y.Z version of PostGreSQL to use.",
       "Type": "String"
-    },
-    "VpcId": {
-      "Description": "ID of an existing Virtual Private Cloud (VPC).",
-      "Type": "AWS::EC2::VPC::Id"
     }
   },
   "Resources": {
@@ -137,8 +133,8 @@
       "Metadata": {},
       "Properties": {
         "AllocatedStorage": { "Ref": "DbStorageSize" },
-        "AllowMajorVersionUpgrade": "true",
-        "AutoMinorVersionUpgrade": "true",
+        "AllowMajorVersionUpgrade": true,
+        "AutoMinorVersionUpgrade": true,
         "BackupRetentionPeriod": "7",
         "DBInstanceClass": { "Ref": "DBInstanceClass" },
         "DBInstanceIdentifier": {

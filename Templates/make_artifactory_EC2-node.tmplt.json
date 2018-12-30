@@ -49,18 +49,6 @@
         }
       ]
     },
-    "Reboot": {
-      "Fn::Not": [
-        {
-          "Fn::Equals": [
-            {
-              "Ref": "NoReboot"
-            },
-            "true"
-          ]
-        }
-      ]
-    },
     "UseCfnUrl": {
       "Fn::Not": [
         {
@@ -107,8 +95,7 @@
             "Domainname",
             "SecurityGroupIds",
             "SubnetIds",
-            "NoPublicIp",
-            "NoReboot"
+            "NoPublicIp"
           ]
         },
         {
@@ -274,7 +261,7 @@
     "AmiId": {
       "AllowedPattern": "^ami-[0-9a-z]{8}$|^ami-[0-9a-z]{17}$",
       "Description": "ID of the AMI to launch",
-      "Type": "String"
+      "Type": "AWS::EC2::Image::Id"
     },
     "BackupVolumeDevice": {
       "AllowedValues": [
@@ -541,15 +528,6 @@
       "Description": "Controls whether to assign the instance a public IP. Recommended to leave at \"true\" _unless_ launching in a public subnet",
       "Type": "String"
     },
-    "NoReboot": {
-      "AllowedValues": [
-        "false",
-        "true"
-      ],
-      "Default": "false",
-      "Description": "Controls whether to reboot the instance as the last step of cfn-init execution",
-      "Type": "String"
-    },
     "PipIndexFips": {
       "AllowedPattern": "^$|^http://.*$|^https://.*$",
       "Default": "https://pypi.org/simple/",
@@ -736,8 +714,8 @@
           {
             "DeviceName": "/dev/xvda",
             "Ebs": {
-              "DeleteOnTermination": "true",
-              "VolumeSize": "20",
+              "DeleteOnTermination": true,
+              "VolumeSize": 20,
               "VolumeType": "gp2"
             }
           },
@@ -749,7 +727,7 @@
                   "Ref": "AppVolumeDevice"
                 },
                 "Ebs": {
-                  "DeleteOnTermination": "true",
+                  "DeleteOnTermination": true,
                   "VolumeSize": {
                     "Ref": "AppVolumeSize"
                   },
@@ -771,7 +749,7 @@
                   "Ref": "BackupVolumeDevice"
                 },
                 "Ebs": {
-                  "DeleteOnTermination": "true",
+                  "DeleteOnTermination": true,
                   "VolumeSize": {
                     "Ref": "BackupVolumeSize"
                   },
@@ -811,8 +789,8 @@
             "AssociatePublicIpAddress": {
               "Fn::If": [
                 "AssignPublicIp",
-                "true",
-                "false"
+                true,
+                false
               ]
             },
             "DeviceIndex": "0",

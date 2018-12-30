@@ -22,8 +22,7 @@
             "ArtifactoryOsPrepScriptUrl",
             "ArtifactoryDbPropsScriptUrl",
             "ArtifactoryStorageScriptUrl",
-            "ArtifactoryHaSetupScriptUrl",
-            "ArtifactoryBkupScriptUrl"
+            "ArtifactoryHaSetupScriptUrl"
           ]
         },
         {
@@ -116,9 +115,6 @@
         },
         "AppVolumeSize": {
           "default": "Artifactory Cache Size"
-        },
-        "ArtifactoryBkupScriptUrl": {
-          "default": "Backup script URL"
         },
         "ArtifactoryDbAdmin": {
           "default": "Master database administrator"
@@ -243,11 +239,6 @@
       ],
       "Default": "gp2",
       "Description": "Type of EBS volume to create. Ignored if \"AppVolumeDevice\" is blank",
-      "Type": "String"
-    },
-    "ArtifactoryBkupScriptUrl": {
-      "AllowedPattern": "^$|^http://.*$|^https://.*$",
-      "Description": "Cron-script for moving Artifactory backups to S3",
       "Type": "String"
     },
     "ArtifactBucket": {
@@ -670,7 +661,7 @@
         "TemplateURL": {
           "Ref": "ArtifactoryHostTemplate"
         },
-        "TimeoutInMinutes": "10"
+        "TimeoutInMinutes": 10
       },
       "Type": "AWS::CloudFormation::Stack"
     },
@@ -684,7 +675,7 @@
         "TemplateURL": {
           "Ref": "BucketIamTemplate"
         },
-        "TimeoutInMinutes": "10"
+        "TimeoutInMinutes": 10
       },
       "Type": "AWS::CloudFormation::Stack"
     },
@@ -698,7 +689,7 @@
         "TemplateURL": {
           "Ref": "ArtifactBucketTemplate"
         },
-        "TimeoutInMinutes": "10"
+        "TimeoutInMinutes": 10
       },
       "Type": "AWS::CloudFormation::Stack"
     }
