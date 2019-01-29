@@ -1,6 +1,6 @@
-# cfn-Artifactory
+# Artifactory
 
-The cfn-artifactory project is a sub-project of the overarching DevOps Tool-Chain (DOTC) project. This project — and its peer projects — is designed to handle the automated deployment of common DevOps tool-chain services onto STIG-harderend, EL7-compatible Amazon EC2 instances and related AWS resources. The first part of this automation is comprised of CloudFormation (CFn) templates. Included in this project are the following templated activities:
+The cfn-artifactory project is a sub-project of the overarching DevOps Tool-Chain (DOTC) project. This project — and its peer projects — is designed to handle the automated deployment of common DevOps tool-chain services onto STIG-hardened, EL7-compatible Amazon EC2 instances and related AWS resources. The first part of this automation is comprised of CloudFormation (CFn) templates. Included in this project are the following templated activities:
 
 * [Standalone EC2](Templates/make_artifactory-PRO_EC2-node.tmplt.json) instance
 * [EFS-based](Templates/make_artifactory-PRO_EFS.tmplt.json) network-shares
@@ -8,7 +8,7 @@ The cfn-artifactory project is a sub-project of the overarching DevOps Tool-Chai
 * Network [Security Groups](Templates/make_artifactory_SGs.tmplt.json)
 * [Application LoadBalancer](Templates/make_artifactory_ELBv2.tmplt.json) (a.k.a., "ELBv2" load-balancer)
 * [Instance-role](Templates/make_artifactory-PRO_IAM-instance.tmplt.json) creation
-* [Simple Storage Service](Templates/make_artifactory-PRO_S3-buckets.tmplt.json) for S3-hosted, persistent storage of backups. Includes lifecycle management an reporting extensions.
+* [Simple Storage Service](Templates/make_artifactory-PRO_S3-buckets.tmplt.json) for S3-hosted, persistent storage of backups. Includes lifecycle management and reporting extensions.
 * [Parent Template](Templates/make_artifactory-PRO_parent-EFS.tmplt.json): drives all of the above stacks to create an end-to-end deployment.
 
 The above currently do not support Artifactory Enterprise or use of AWS AutoScaling functionality. Both are pending features.
@@ -42,7 +42,6 @@ These templates and scripts are also designed to ensure that Artifactory data is
 
 * Ability to destroy and recreate at will, while retaining all configuration and hosted data, has been tested. It's expected that most such actions will happen via stack-update or autoscaling actions (manual, scheduled or reactive).  In the event that a stack-update results in two instances being "live" simultaneously, it will typically be necessary to restart the new instance after the pre-update instance terminates. This requirement is resultant Artifactory's built-in data-integrity protections.
 * Due to a [bug](https://bugzilla.redhat.com/show_bug.cgi?id=1312002) in the systemd/nfs-client implementation in RHEL/CentOS 7, reboots of instances have a better than strong probability of hanging. If a hang occurs, it may be necessary to issue a force-shutdown to clear the hang (paired with a start if the goal was a reboot).
-* The EC2 template runs [watchmaker](http://watchmaker.readthedocs.io/en/stable/) after the EC2 instance launches but before Artifactory has been installed. Watchmaker ensures that the resultant system is STIG-hardened. See the [Watchmaker document)(https://watchmaker.readthedocs.io/) for description of what Watchmaker does, how it does it and any additional, envionrment-specific fine-tuning that may be desired/needed.
+* The EC2 template runs [watchmaker](http://watchmaker.readthedocs.io/en/stable/) after the EC2 instance launches but before Artifactory has been installed. Watchmaker ensures that the resultant system is STIG-hardened. See the [Watchmaker document)(https://watchmaker.readthedocs.io/) for description of what Watchmaker does, how it does it and any additional, environment-specific fine-tuning that may be desired/needed.
 
 ![Build Status](https://travis-ci.org/plus3it/cfn-artifactory.svg?branch=master)
-
